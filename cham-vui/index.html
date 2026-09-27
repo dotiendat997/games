@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Chạm Vui - Bé Vui Chơi</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; touch-action: none; user-select: none;
+    font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
+  }
+  body {
+    background: linear-gradient(135deg, #ffd6e8, #d6f0ff, #fff6c9, #d9ffe0);
+    background-size: 400% 400%;
+    animation: bgShift 18s ease infinite;
+  }
+  @keyframes bgShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+
+  #title {
+    position: fixed; top: 14px; left: 0; right: 0;
+    text-align: center; font-size: clamp(22px, 5vw, 40px);
+    font-weight: 800; color: #5b3aa0; text-shadow: 0 2px 0 #fff;
+    pointer-events: none; z-index: 5;
+  }
+
+  #startScreen {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 24px;
+    background: radial-gradient(circle at 50% 30%, #fff9e0, #ffe0f0);
+    z-index: 50;
+  }
+  #startScreen h1 {
+    font-size: clamp(28px, 8vw, 56px); color: #7a3ea1; margin: 0;
+    text-align: center; text-shadow: 0 3px 0 #fff;
+  }
+  #startEmoji { font-size: clamp(60px, 20vw, 140px); animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-4deg);} 50% { transform: translateY(-18px) rotate(4deg);} }
+  #startBtn {
+    font-size: clamp(20px, 5vw, 34px); font-weight: 800; color: #fff;
+    background: linear-gradient(135deg,#ff8fb1,#ffb86b);
+    border: none; border-radius: 999px; padding: 18px 48px;
+    box-shadow: 0 8px 0 #d9557d, 0 14px 24px rgba(0,0,0,.2);
+    cursor: pointer; transition: transform .1s;
+  }
+  #startBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #d9557d; }
+
+  .item {
+    position: absolute; font-size: 90px; line-height: 1;
+    cursor: pointer; filter: drop-shadow(0 6px 6px rgba(0,0,0,.15));
+    will-change: transform; z-index: 3;
+  }
+  .item.pop { animation: popAway .35s ease forwards; pointer-events: none; }
+  @keyframes popAway {
+    0%   { transform: scale(1); opacity: 1; }
+    60%  { transform: scale(1.4); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  .particle {
+    position: absolute; font-size: 34px; pointer-events: none;
+    z-index: 6; will-change: transform, opacity;
+  }
+
+  #muteBtn {
+    position: fixed; top: 14px; right: 14px; z-index: 60;
+    width: 52px; height: 52px; border-radius: 50%; border: none;
+    background: #ffffffcc; font-size: 26px; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,.15);
+  }
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+  <div id="startEmoji">🐥</div>
+  <h1>Chạm Vui<br>Bé Vui Chơi</h1>
+  <button id="startBtn">Bắt đầu chơi ▶</button>
+</div>
+
+<div id="title">✨ Chạm vào để xem điều bất ngờ ✨</div>
+<button id="muteBtn" aria-label="Tắt/bật âm thanh">🔊</button>
+<div id="stage"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var ITEMS = [
+    { e: "🐱", name: "Con mèo" },
+    { e: "🐶", name: "Con chó" },
+    { e: "🐮", name: "Con bò" },
+    { e: "🐷", name: "Con lợn" },
+    { e: "🐔", name: "Con gà" },
+    { e: "🦆", name: "Con vịt" },
+    { e: "🐘", name: "Con voi" },
+    { e: "🦁", name: "Con sư tử" },
+    { e: "🐵", name: "Con khỉ" },
+    { e: "🐰", name: "Con thỏ" },
+    { e: "🐢", name: "Con rùa" },
+    { e: "🐟", name: "Con cá" },
+    { e: "🦋", name: "Con bướm" },
+    { e: "🍎", name: "Quả táo" },
+    { e: "🍌", name: "Quả chuối" },
+    { e: "🍊", name: "Quả cam" },
+    { e: "🍇", name: "Quả nho" },
+    { e: "🍉", name: "Quả dưa hấu" },
+    { e: "🍓", name: "Quả dâu" },
+    { e: "⭐", name: "Ngôi sao" },
+    { e: "❤️", name: "Trái tim" },
+    { e: "🌞", name: "Ông mặt trời" },
+    { e: "🌙", name: "Mặt trăng" },
+    { e: "🚗", name: "Ô tô" },
+    { e: "🚌", name: "Xe buýt" },
+    { e: "✈️", name: "Máy bay" },
+    { e: "🚂", name: "Tàu hỏa" },
+    { e: "🎈", name: "Bóng bay" },
+    { e: "🌈", name: "Cầu vồng" },
+    { e: "⚽", name: "Quả bóng" }
+  ];
+
+  var stage = document.getElementById("stage");
+  var startScreen = document.getElementById("startScreen");
+  var startBtn = document.getElementById("startBtn");
+  var muteBtn = document.getElementById("muteBtn");
+
+  var muted = false;
+  var floaters = [];
+  var MAX_ITEMS = 4;
+  var running = false;
+
+  // ---- Audio (synthesized, no external files needed) ----
+  var audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+  function playChime() {
+    if (muted || !audioCtx) return;
+    var notes = [523.25, 659.25, 783.99]; // C5 E5 G5
+    notes.forEach(function (freq, i) {
+      var t0 = audioCtx.currentTime + i * 0.09;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.3);
+    });
+  }
+  // ---- Voice selection: prefer a clear female Vietnamese voice ----
+  var femaleVietnameseVoice = null;
+  var FEMALE_VOICE_HINTS = ["hoaimy", "linh", "google tiếng việt", "google tieng viet", "female", "nữ"];
+  var MALE_VOICE_HINTS = ["namminh", "male", "nam "];
+
+  function refreshVoices() {
+    if (!("speechSynthesis" in window)) return;
+    var voices = window.speechSynthesis.getVoices();
+    var viVoices = voices.filter(function (v) { return /^vi(-|_|$)/i.test(v.lang); });
+    if (!viVoices.length) { femaleVietnameseVoice = null; return; }
+
+    var byHint = viVoices.find(function (v) {
+      var n = v.name.toLowerCase();
+      return FEMALE_VOICE_HINTS.some(function (h) { return n.indexOf(h) !== -1; });
+    });
+    if (byHint) { femaleVietnameseVoice = byHint; return; }
+
+    var notMale = viVoices.find(function (v) {
+      var n = v.name.toLowerCase();
+      return !MALE_VOICE_HINTS.some(function (h) { return n.indexOf(h) !== -1; });
+    });
+    femaleVietnameseVoice = notMale || viVoices[0];
+  }
+
+  if ("speechSynthesis" in window) {
+    refreshVoices();
+    window.speechSynthesis.onvoiceschanged = refreshVoices;
+  }
+
+  function speak(text) {
+    if (muted) return;
+    if (!("speechSynthesis" in window)) return;
+    try {
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = "vi-VN";
+      if (femaleVietnameseVoice) u.voice = femaleVietnameseVoice;
+      u.rate = 0.65;
+      u.pitch = 1.2;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- Floating items ----
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+  function pickItem() { return ITEMS[Math.floor(Math.random() * ITEMS.length)]; }
+
+  function spawnFloater() {
+    var data = pickItem();
+    var el = document.createElement("div");
+    el.className = "item";
+    el.textContent = data.e;
+    var size = rand(90, 150);
+    el.style.fontSize = size + "px";
+
+    var w = window.innerWidth, h = window.innerHeight;
+    var x = rand(0, w - size);
+    var y = rand(h * 0.18, h - size - 20);
+    var vx = rand(-0.6, 0.6) || 0.4;
+    var vy = rand(-0.6, 0.6) || 0.4;
+    if (Math.abs(vx) < 0.15) vx = 0.3 * (Math.random() < 0.5 ? -1 : 1);
+    if (Math.abs(vy) < 0.15) vy = 0.3 * (Math.random() < 0.5 ? -1 : 1);
+
+    var f = { el: el, data: data, x: x, y: y, vx: vx, vy: vy, size: size, angle: rand(0, 360), spin: rand(-0.3, 0.3) };
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+
+    el.addEventListener("pointerdown", function (ev) {
+      ev.preventDefault();
+      onPop(f);
+    }, { passive: false });
+
+    stage.appendChild(el);
+    floaters.push(f);
+  }
+
+  function onPop(f) {
+    if (f.popped) return;
+    f.popped = true;
+    ensureAudio();
+    playChime();
+    speak(f.data.name);
+    burstParticles(f.x + f.size / 2, f.y + f.size / 2, f.data.e);
+    f.el.classList.add("pop");
+    setTimeout(function () {
+      if (f.el.parentNode) f.el.parentNode.removeChild(f.el);
+      floaters = floaters.filter(function (o) { return o !== f; });
+      spawnFloater();
+    }, 350);
+  }
+
+  var CELEBRATE = ["✨", "🎉", "⭐", "💖"];
+  function burstParticles(cx, cy, emoji) {
+    var count = 10;
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement("div");
+      p.className = "particle";
+      p.textContent = Math.random() < 0.5 ? emoji : CELEBRATE[Math.floor(Math.random() * CELEBRATE.length)];
+      p.style.left = cx + "px";
+      p.style.top = cy + "px";
+      var angle = (Math.PI * 2 * i) / count + rand(-0.3, 0.3);
+      var dist = rand(80, 160);
+      var dx = Math.cos(angle) * dist;
+      var dy = Math.sin(angle) * dist;
+      stage.appendChild(p);
+      var start = performance.now();
+      var dur = 600;
+      (function animateParticle(p, dx, dy, start, dur) {
+        function step(now) {
+          var t = Math.min(1, (now - start) / dur);
+          var ease = 1 - Math.pow(1 - t, 2);
+          p.style.transform = "translate(" + dx * ease + "px," + (dy * ease + t * t * 40) + "px) scale(" + (1 - t * 0.6) + ")";
+          p.style.opacity = String(1 - t);
+          if (t < 1) requestAnimationFrame(step);
+          else if (p.parentNode) p.parentNode.removeChild(p);
+        }
+        requestAnimationFrame(step);
+      })(p, dx, dy, start, dur);
+    }
+  }
+
+  function tick() {
+    if (!running) return;
+    var w = window.innerWidth, h = window.innerHeight;
+    for (var i = 0; i < floaters.length; i++) {
+      var f = floaters[i];
+      if (f.popped) continue;
+      f.x += f.vx;
+      f.y += f.vy;
+      f.angle += f.spin;
+      if (f.x <= 0 || f.x >= w - f.size) { f.vx *= -1; f.x = Math.max(0, Math.min(f.x, w - f.size)); }
+      if (f.y <= h * 0.12 || f.y >= h - f.size - 10) { f.vy *= -1; f.y = Math.max(h * 0.12, Math.min(f.y, h - f.size - 10)); }
+      f.el.style.transform = "translate(" + f.x + "px," + f.y + "px) rotate(" + f.angle + "deg)";
+      f.el.style.left = "0px";
+      f.el.style.top = "0px";
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function startGame() {
+    ensureAudio();
+    startScreen.style.display = "none";
+    running = true;
+    for (var i = 0; i < MAX_ITEMS; i++) spawnFloater();
+    requestAnimationFrame(tick);
+  }
+
+  startBtn.addEventListener("click", startGame);
+  startBtn.addEventListener("touchend", function (e) { e.preventDefault(); startGame(); }, { passive: false });
+
+  muteBtn.addEventListener("click", function () {
+    muted = !muted;
+    muteBtn.textContent = muted ? "🔇" : "🔊";
+    if (muted && window.speechSynthesis) window.speechSynthesis.cancel();
+  });
+
+  document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+})();
+</script>
+</body>
+</html>

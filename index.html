@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Góc Chơi Của Bé</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(135deg, #ffd6e8, #d6f0ff, #fff6c9, #d9ffe0);
+    display: flex; flex-direction: column; align-items: center; padding: 40px 16px;
+  }
+  h1 { color: #5b3aa0; font-size: clamp(28px, 6vw, 44px); text-shadow: 0 2px 0 #fff; }
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px; width: 100%; max-width: 900px; margin-top: 20px;
+  }
+  a.card {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    background: #ffffffcc; border-radius: 20px; padding: 28px 16px;
+    text-decoration: none; color: #5b3aa0; font-weight: 700; font-size: 20px;
+    box-shadow: 0 6px 16px rgba(0,0,0,.12); transition: transform .15s;
+  }
+  a.card:active { transform: scale(0.96); }
+  .emoji { font-size: 56px; }
+</style>
+</head>
+<body>
+  <h1>🎈 Góc Chơi Của Bé 🎈</h1>
+  <div class="grid">
+    <a class="card" href="cham-vui/">
+      <span class="emoji">🐥</span>
+      Chạm Vui
+    </a>
+  </div>
+</body>
+</html>
