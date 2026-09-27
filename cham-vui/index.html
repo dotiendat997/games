@@ -76,6 +76,24 @@
     background: #ffffffcc; font-size: 26px; cursor: pointer;
     box-shadow: 0 3px 8px rgba(0,0,0,.15);
   }
+
+  #nameCaption {
+    position: fixed; left: 0; right: 0; bottom: 6%;
+    text-align: center; pointer-events: none; z-index: 40;
+    font-size: clamp(32px, 9vw, 72px); font-weight: 900;
+    color: #7a3ea1; text-shadow: 0 3px 0 #fff, 0 6px 14px rgba(0,0,0,.15);
+    opacity: 0; transform: translateY(10px) scale(0.9);
+  }
+  #nameCaption.show {
+    animation: captionPop 1.6s ease forwards;
+  }
+  @keyframes captionPop {
+    0%   { opacity: 0; transform: translateY(10px) scale(0.9); }
+    15%  { opacity: 1; transform: translateY(0) scale(1.05); }
+    25%  { transform: translateY(0) scale(1); }
+    80%  { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-10px) scale(1); }
+  }
 </style>
 </head>
 <body>
@@ -89,6 +107,7 @@
 <div id="title">✨ Chạm vào để xem điều bất ngờ ✨</div>
 <button id="muteBtn" aria-label="Tắt/bật âm thanh">🔊</button>
 <div id="stage"></div>
+<div id="nameCaption"></div>
 
 <script>
 (function () {
@@ -131,6 +150,17 @@
   var startScreen = document.getElementById("startScreen");
   var startBtn = document.getElementById("startBtn");
   var muteBtn = document.getElementById("muteBtn");
+  var nameCaption = document.getElementById("nameCaption");
+  var captionTimer = null;
+
+  function showCaption(text) {
+    nameCaption.textContent = text;
+    nameCaption.classList.remove("show");
+    void nameCaption.offsetWidth; // restart animation
+    nameCaption.classList.add("show");
+    if (captionTimer) clearTimeout(captionTimer);
+    captionTimer = setTimeout(function () { nameCaption.classList.remove("show"); }, 1600);
+  }
 
   var muted = false;
   var floaters = [];
@@ -245,6 +275,7 @@
     ensureAudio();
     playChime();
     speak(f.data.name);
+    showCaption(f.data.e + " " + f.data.name);
     burstParticles(f.x + f.size / 2, f.y + f.size / 2, f.data.e);
     f.el.classList.add("pop");
     setTimeout(function () {
