@@ -4,9 +4,10 @@ Game siêu đơn giản cho bé 1-3 tuổi: chạm vào con vật/hoa quả/hìn
 đang bay trên màn hình, bé sẽ nghe gọi tên bằng tiếng Việt kèm hiệu ứng
 pháo hoa vui mắt. Không có thắng/thua, không giới hạn thời gian.
 
-Chỉ có 1 file `index.html` (HTML/CSS/JS thuần, không cần cài đặt gì).
-Đây là một game con trong bộ game — xem cách deploy chung ở
-[`../README.md`](../README.md).
+Chỉ có `index.html` (HTML/CSS/JS thuần, không cần cài đặt gì) và một
+thư mục `audio/` chứa sẵn 30 file mp3 giọng nữ đọc tên từng con vật/đồ
+vật (tạo bằng Google TTS). Đây là một game con trong bộ game — xem
+cách deploy chung ở [`../README.md`](../README.md).
 
 ## Chạy thử ngay trên máy
 
@@ -21,9 +22,15 @@ python3 -m http.server 8000
 
 ## Ghi chú
 
-- Giọng đọc tên (tiếng Việt) dùng Web Speech API của trình duyệt —
-  máy/trình duyệt nào không có giọng vi-VN thì sẽ tự động im lặng phần
-  đó, phần chạm/âm thanh chuông vẫn hoạt động bình thường.
+- Giọng đọc tên là file mp3 thu sẵn (giọng nữ, phát âm chuẩn) trong
+  `audio/`, nên nghe giống nhau trên mọi trình duyệt/thiết bị — không
+  phụ thuộc trình duyệt có hỗ trợ đọc giọng nói hay không (Web Speech
+  API của trình duyệt/OS thường chất lượng thấp, thậm chí im lặng trên
+  một số trình duyệt như Brave/Edge trên Linux).
+- Nếu vì lý do nào đó file mp3 không phát được, game tự động rơi về
+  đọc bằng Web Speech API của trình duyệt (nếu có) như phương án dự phòng.
+- Mỗi lần chạm cũng hiện chữ tên con vật/đồ vật trên màn hình, nên vẫn
+  học được tên kể cả khi không nghe được âm thanh.
 - Có nút loa ở góc trên bên phải để tắt/bật âm thanh.
-- Không cần internet sau khi tải trang xong (không phụ thuộc thư viện
-  ngoài, không cần ảnh/âm thanh tải riêng).
+- Cần internet lần đầu tải trang (để tải các file mp3, ~330KB); sau đó
+  trình duyệt cache lại, không cần internet nữa.

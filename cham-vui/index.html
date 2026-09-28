@@ -114,36 +114,36 @@
   "use strict";
 
   var ITEMS = [
-    { e: "🐱", name: "Con mèo" },
-    { e: "🐶", name: "Con chó" },
-    { e: "🐮", name: "Con bò" },
-    { e: "🐷", name: "Con lợn" },
-    { e: "🐔", name: "Con gà" },
-    { e: "🦆", name: "Con vịt" },
-    { e: "🐘", name: "Con voi" },
-    { e: "🦁", name: "Con sư tử" },
-    { e: "🐵", name: "Con khỉ" },
-    { e: "🐰", name: "Con thỏ" },
-    { e: "🐢", name: "Con rùa" },
-    { e: "🐟", name: "Con cá" },
-    { e: "🦋", name: "Con bướm" },
-    { e: "🍎", name: "Quả táo" },
-    { e: "🍌", name: "Quả chuối" },
-    { e: "🍊", name: "Quả cam" },
-    { e: "🍇", name: "Quả nho" },
-    { e: "🍉", name: "Quả dưa hấu" },
-    { e: "🍓", name: "Quả dâu" },
-    { e: "⭐", name: "Ngôi sao" },
-    { e: "❤️", name: "Trái tim" },
-    { e: "🌞", name: "Ông mặt trời" },
-    { e: "🌙", name: "Mặt trăng" },
-    { e: "🚗", name: "Ô tô" },
-    { e: "🚌", name: "Xe buýt" },
-    { e: "✈️", name: "Máy bay" },
-    { e: "🚂", name: "Tàu hỏa" },
-    { e: "🎈", name: "Bóng bay" },
-    { e: "🌈", name: "Cầu vồng" },
-    { e: "⚽", name: "Quả bóng" }
+    { e: "🐱", name: "Con mèo", audio: "audio/item-0.mp3" },
+    { e: "🐶", name: "Con chó", audio: "audio/item-1.mp3" },
+    { e: "🐮", name: "Con bò", audio: "audio/item-2.mp3" },
+    { e: "🐷", name: "Con lợn", audio: "audio/item-3.mp3" },
+    { e: "🐔", name: "Con gà", audio: "audio/item-4.mp3" },
+    { e: "🦆", name: "Con vịt", audio: "audio/item-5.mp3" },
+    { e: "🐘", name: "Con voi", audio: "audio/item-6.mp3" },
+    { e: "🦁", name: "Con sư tử", audio: "audio/item-7.mp3" },
+    { e: "🐵", name: "Con khỉ", audio: "audio/item-8.mp3" },
+    { e: "🐰", name: "Con thỏ", audio: "audio/item-9.mp3" },
+    { e: "🐢", name: "Con rùa", audio: "audio/item-10.mp3" },
+    { e: "🐟", name: "Con cá", audio: "audio/item-11.mp3" },
+    { e: "🦋", name: "Con bướm", audio: "audio/item-12.mp3" },
+    { e: "🍎", name: "Quả táo", audio: "audio/item-13.mp3" },
+    { e: "🍌", name: "Quả chuối", audio: "audio/item-14.mp3" },
+    { e: "🍊", name: "Quả cam", audio: "audio/item-15.mp3" },
+    { e: "🍇", name: "Quả nho", audio: "audio/item-16.mp3" },
+    { e: "🍉", name: "Quả dưa hấu", audio: "audio/item-17.mp3" },
+    { e: "🍓", name: "Quả dâu", audio: "audio/item-18.mp3" },
+    { e: "⭐", name: "Ngôi sao", audio: "audio/item-19.mp3" },
+    { e: "❤️", name: "Trái tim", audio: "audio/item-20.mp3" },
+    { e: "🌞", name: "Ông mặt trời", audio: "audio/item-21.mp3" },
+    { e: "🌙", name: "Mặt trăng", audio: "audio/item-22.mp3" },
+    { e: "🚗", name: "Ô tô", audio: "audio/item-23.mp3" },
+    { e: "🚌", name: "Xe buýt", audio: "audio/item-24.mp3" },
+    { e: "✈️", name: "Máy bay", audio: "audio/item-25.mp3" },
+    { e: "🚂", name: "Tàu hỏa", audio: "audio/item-26.mp3" },
+    { e: "🎈", name: "Bóng bay", audio: "audio/item-27.mp3" },
+    { e: "🌈", name: "Cầu vồng", audio: "audio/item-28.mp3" },
+    { e: "⚽", name: "Quả bóng", audio: "audio/item-29.mp3" }
   ];
 
   var stage = document.getElementById("stage");
@@ -236,6 +236,32 @@
     } catch (e) { /* ignore */ }
   }
 
+  // ---- Recorded voice clips (female Vietnamese, works on every browser) ----
+  var audioCache = {};
+  function getAudioClip(src) {
+    if (!audioCache[src]) {
+      var a = new Audio(src);
+      a.preload = "auto";
+      audioCache[src] = a;
+    }
+    return audioCache[src];
+  }
+  function preloadAllClips() {
+    ITEMS.forEach(function (it) { if (it.audio) getAudioClip(it.audio); });
+  }
+  function playVoice(item) {
+    if (muted) return;
+    if (!item.audio) { speak(item.name); return; }
+    try {
+      var clip = getAudioClip(item.audio);
+      clip.currentTime = 0;
+      var p = clip.play();
+      if (p && typeof p.catch === "function") p.catch(function () { speak(item.name); });
+    } catch (e) {
+      speak(item.name);
+    }
+  }
+
   // ---- Floating items ----
   function rand(min, max) { return Math.random() * (max - min) + min; }
   function pickItem() { return ITEMS[Math.floor(Math.random() * ITEMS.length)]; }
@@ -274,7 +300,7 @@
     f.popped = true;
     ensureAudio();
     playChime();
-    speak(f.data.name);
+    playVoice(f.data);
     showCaption(f.data.e + " " + f.data.name);
     burstParticles(f.x + f.size / 2, f.y + f.size / 2, f.data.e);
     f.el.classList.add("pop");
@@ -335,6 +361,7 @@
 
   function startGame() {
     ensureAudio();
+    preloadAllClips();
     startScreen.style.display = "none";
     running = true;
     for (var i = 0; i < MAX_ITEMS; i++) spawnFloater();
