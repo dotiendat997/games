@@ -27,7 +27,8 @@
   .tree { position: absolute; bottom: 6%; font-size: 60px; }
 
   #rabbits { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
-  .rabbit { position: absolute; top: 0; left: 0; font-size: 56px; line-height: 1; will-change: transform; }
+  .rabbit { position: absolute; top: 0; left: 0; width: 56px; height: 56px; will-change: transform; }
+  .rabbit svg { display: block; width: 100%; height: 100%; overflow: visible; }
 
   #draw { position: fixed; inset: 0; z-index: 3; touch-action: none; }
 
@@ -56,7 +57,8 @@
   }
   #startScreen h1 { font-size: clamp(26px, 7.5vw, 50px); color: #2f6d3a; margin: 0; text-shadow: 0 3px 0 #fff; }
   #startScreen p { font-size: clamp(15px, 3.6vw, 20px); color: #3a6b2e; max-width: 480px; margin: 0; }
-  #startEmoji { font-size: clamp(56px, 18vw, 120px); animation: bob 1.5s ease-in-out infinite; }
+  #startEmoji { width: clamp(56px, 18vw, 120px); height: clamp(56px, 18vw, 120px); animation: bob 1.5s ease-in-out infinite; }
+  #startEmoji svg { display: block; width: 100%; height: 100%; overflow: visible; }
   @keyframes bob { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-16px) rotate(4deg); } }
   #startBtn {
     font-size: clamp(20px, 5vw, 32px); font-weight: 800; color: #fff;
@@ -81,7 +83,7 @@
 </div>
 
 <div id="startScreen">
-  <div id="startEmoji">🐰</div>
+  <div id="startEmoji"></div>
   <h1>Thỏ Vượt Rào</h1>
   <p>Dùng tay vẽ đường cầu vồng để chặn đàn thỏ — thỏ sẽ tìm mọi cách nhảy qua, chui dưới, hoặc vòng qua đường bạn vẽ!</p>
   <button id="startBtn">Bắt đầu chơi ▶</button>
@@ -107,6 +109,27 @@
   var STROKE_FADE = 2500;
   var MAX_TOTAL_POINTS = 2600;
   var SENSOR_RADIUS = 14;
+
+  var BUNNY_SVG =
+    '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' +
+    '<g transform="rotate(-12 34 20)">' +
+    '<rect x="26" y="2" width="16" height="40" rx="8" fill="#ffffff" stroke="#d7d7e2" stroke-width="2"/>' +
+    '<rect x="30" y="9" width="8" height="26" rx="4" fill="#ffc2dc"/>' +
+    '</g>' +
+    '<g transform="rotate(12 66 20)">' +
+    '<rect x="58" y="2" width="16" height="40" rx="8" fill="#ffffff" stroke="#d7d7e2" stroke-width="2"/>' +
+    '<rect x="62" y="9" width="8" height="26" rx="4" fill="#ffc2dc"/>' +
+    '</g>' +
+    '<circle cx="50" cy="68" r="27" fill="#ffffff" stroke="#d7d7e2" stroke-width="2"/>' +
+    '<ellipse cx="38" cy="94" rx="9" ry="5" fill="#ffffff" stroke="#d7d7e2" stroke-width="2"/>' +
+    '<ellipse cx="62" cy="94" rx="9" ry="5" fill="#ffffff" stroke="#d7d7e2" stroke-width="2"/>' +
+    '<circle cx="50" cy="40" r="21" fill="#ffffff" stroke="#d7d7e2" stroke-width="2"/>' +
+    '<ellipse cx="34" cy="46" rx="5" ry="3" fill="#ffd6e8" opacity="0.7"/>' +
+    '<ellipse cx="66" cy="46" rx="5" ry="3" fill="#ffd6e8" opacity="0.7"/>' +
+    '<circle cx="42" cy="40" r="2.6" fill="#3a3a3a"/>' +
+    '<circle cx="58" cy="40" r="2.6" fill="#3a3a3a"/>' +
+    '<path d="M50 44 l-3.2 4.2 h6.4 z" fill="#ff8fc0"/>' +
+    '</svg>';
 
   function rand(min, max) { return Math.random() * (max - min) + min; }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
@@ -313,7 +336,7 @@
   function makeRabbit(i) {
     var el = document.createElement("div");
     el.className = "rabbit";
-    el.textContent = "🐰";
+    el.innerHTML = BUNNY_SVG;
     rabbitsLayer.appendChild(el);
     var lane = i % LANE_COUNT;
     return {
@@ -450,6 +473,8 @@
     lastT = null;
     requestAnimationFrame(tick);
   }
+
+  document.getElementById("startEmoji").innerHTML = BUNNY_SVG;
 
   document.getElementById("startBtn").addEventListener("click", startGame);
   document.getElementById("startBtn").addEventListener("touchend", function (e) { e.preventDefault(); startGame(); }, { passive: false });
