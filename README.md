@@ -8,6 +8,9 @@ từ một repo duy nhất.
 
 - [`cham-vui/`](cham-vui/) — Chạm Vui: bé chạm vào con vật/hoa quả bay
   trên màn hình, nghe gọi tên tiếng Việt. Dành cho bé 1-3 tuổi.
+- [`tho-vuot-rao/`](tho-vuot-rao/) — Thỏ Vượt Rào: bé vẽ đường cầu vồng
+  bằng tay để chặn đàn thỏ đang đi qua, thỏ tự tìm cách nhảy/chui/vòng
+  qua đường vẽ.
 
 `index.html` ở thư mục gốc là trang chọn game, link tới từng thư mục con.
 
