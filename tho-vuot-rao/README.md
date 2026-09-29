@@ -24,7 +24,7 @@ python3 -m http.server 8000
 - Kéo ngón tay (hoặc chuột) trên màn hình để vẽ đường cầu vồng.
 - Thỏ đi tới đường vẽ sẽ dừng lại, rồi tự nhảy qua / chui dưới / vòng
   sang làn khác — mỗi lần khác nhau, không đoán trước được.
-- Đường vẽ tự mờ dần sau khoảng 6 giây rồi biến mất hẳn.
+- Đường vẽ tự mờ dần sau khoảng 14 giây rồi biến mất hẳn.
 - Nút 🧹 góc trên bên trái: xóa hết đường đang vẽ ngay lập tức.
 - Nút 🔊 góc trên bên phải: tắt/bật âm thanh (tiếng "bíu" khi thỏ nhảy
   và tiếng chuông nhỏ khi thỏ vượt qua thành công).

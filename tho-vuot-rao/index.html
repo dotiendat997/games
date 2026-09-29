@@ -95,7 +95,7 @@
 
   var LANE_COUNT = 3;
   var RABBIT_SIZE = 56;
-  var RABBIT_COUNT = 6;
+  var RABBIT_COUNT = 9;
   var GROUND_TOP_RATIO = 0.60;
   var LANE_GAP = 46;
 
@@ -105,8 +105,8 @@
   var RETREAT_MS = 650;
 
   var STROKE_WIDTH = 16;
-  var STROKE_LIFETIME = 6000;
-  var STROKE_FADE = 2500;
+  var STROKE_LIFETIME = 14000;
+  var STROKE_FADE = 3500;
   var MAX_TOTAL_POINTS = 2600;
   var SENSOR_RADIUS = 14;
 
@@ -333,18 +333,23 @@
     return l;
   }
 
+  function loopLength() { return window.innerWidth + RABBIT_SIZE * 2; }
+
   function makeRabbit(i) {
     var el = document.createElement("div");
     el.className = "rabbit";
     el.innerHTML = BUNNY_SVG;
     rabbitsLayer.appendChild(el);
     var lane = i % LANE_COUNT;
+    var perLane = Math.ceil(RABBIT_COUNT / LANE_COUNT);
+    var slot = Math.floor(i / LANE_COUNT);
+    var spacing = loopLength() / perLane;
     return {
       el: el,
-      x: -RABBIT_SIZE - rand(0, 400),
+      x: -RABBIT_SIZE + slot * spacing + rand(-15, 15),
       lane: lane,
       y: laneY(lane),
-      speed: rand(38, 72),
+      speed: rand(46, 58),
       state: "walk",
       stateT: 0,
       hop: 0,
@@ -435,10 +440,8 @@
     }
 
     if (r.x > window.innerWidth + RABBIT_SIZE) {
-      r.x = -RABBIT_SIZE - rand(0, 160);
-      r.lane = Math.floor(Math.random() * LANE_COUNT);
+      r.x -= loopLength();
       r.y = laneY(r.lane);
-      r.speed = rand(38, 72);
       r.state = "walk";
     }
 
