@@ -99,14 +99,15 @@
   var GROUND_TOP_RATIO = 0.60;
   var LANE_GAP = 60;
 
-  var BLOCK_WAIT_MS = 420;
+  var BLOCK_HOLD_MS = 30000;
+  var BLOCK_RELEASE_JITTER_MS = 5000;
   var JUMP_MS = 520, JUMP_HEIGHT = 74;
   var DUCK_MS = 420;
   var RETREAT_MS = 650;
 
   var STROKE_WIDTH = 16;
-  var STROKE_LIFETIME = 26000;
-  var STROKE_FADE = 4000;
+  var STROKE_LIFETIME = 40000;
+  var STROKE_FADE = 5000;
   var MAX_TOTAL_POINTS = 2600;
   var SENSOR_RADIUS = 14;
 
@@ -400,12 +401,15 @@
         if (isBlocked(frontX, frontY, SENSOR_RADIUS, now)) {
           r.state = "blocked";
           r.stateT = 0;
+          r.x -= rand(0, RABBIT_SIZE * 0.45); // huddle up instead of overlapping exactly
+          r.releaseAt = BLOCK_HOLD_MS + rand(0, BLOCK_RELEASE_JITTER_MS);
         }
         break;
       }
       case "blocked": {
         r.stateT += dt * 1000;
-        if (r.stateT > BLOCK_WAIT_MS) {
+        r.bobPhase += dt * 3; // slow idle sway while the group waits
+        if (r.stateT > r.releaseAt) {
           var roll = Math.random();
           if (roll < 0.45) { r.state = "jump"; r.stateT = 0; playBoing(); }
           else if (roll < 0.7) { r.state = "duck"; r.stateT = 0; }
@@ -445,7 +449,9 @@
       r.state = "walk";
     }
 
-    var bob = r.state === "walk" ? Math.sin(r.bobPhase) * 3 : 0;
+    var bob = r.state === "walk" ? Math.sin(r.bobPhase) * 3
+      : r.state === "blocked" ? Math.sin(r.bobPhase) * 1.6
+      : 0;
     var ty = r.y - r.hop + bob;
     r.el.style.transform = "translate(" + r.x + "px," + ty + "px) scaleY(" + r.squish + ")";
   }
