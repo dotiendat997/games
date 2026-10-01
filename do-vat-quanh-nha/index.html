@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Đồ Vật Quanh Nhà - Bé Vui Chơi</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; touch-action: none; user-select: none;
+    font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
+  }
+  body {
+    background: linear-gradient(135deg, #ffe8cf, #fff6c9, #d9f3e6, #d6ecff);
+    background-size: 400% 400%;
+    animation: bgShift 18s ease infinite;
+  }
+  @keyframes bgShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+
+  #title {
+    position: fixed; top: 14px; left: 0; right: 0;
+    text-align: center; font-size: clamp(20px, 4.4vw, 40px);
+    font-weight: 800; color: #8a5a2b; text-shadow: 0 2px 0 #fff;
+    pointer-events: none; z-index: 5; padding: 0 70px;
+  }
+
+  #startScreen {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 24px;
+    background: radial-gradient(circle at 50% 30%, #fff6e0, #ffe8d6);
+    z-index: 50;
+  }
+  #startScreen h1 {
+    font-size: clamp(28px, 8vw, 56px); color: #a15c22; margin: 0;
+    text-align: center; text-shadow: 0 3px 0 #fff;
+  }
+  #startEmoji { font-size: clamp(60px, 20vw, 140px); animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-4deg);} 50% { transform: translateY(-18px) rotate(4deg);} }
+  #startBtn {
+    font-size: clamp(20px, 5vw, 34px); font-weight: 800; color: #fff;
+    background: linear-gradient(135deg,#ff9f5a,#5ac8d8);
+    border: none; border-radius: 999px; padding: 18px 48px;
+    box-shadow: 0 8px 0 #c97a2e, 0 14px 24px rgba(0,0,0,.2);
+    cursor: pointer; transition: transform .1s;
+  }
+  #startBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #c97a2e; }
+
+  .item {
+    position: absolute; line-height: 1;
+    cursor: pointer; filter: drop-shadow(0 6px 6px rgba(0,0,0,.15));
+    will-change: transform; z-index: 3;
+  }
+  .item img { display: block; width: 100%; height: 100%; pointer-events: none; -webkit-user-drag: none; }
+  .item.pop { animation: popAway .35s ease forwards; pointer-events: none; }
+  @keyframes popAway {
+    0%   { transform: scale(1); opacity: 1; }
+    60%  { transform: scale(1.4); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  .particle {
+    position: absolute; font-size: 34px; pointer-events: none;
+    z-index: 6; will-change: transform, opacity;
+  }
+
+  #muteBtn {
+    position: fixed; top: 14px; right: 14px; z-index: 60;
+    width: 52px; height: 52px; border-radius: 50%; border: none;
+    background: #ffffffcc; font-size: 26px; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,.15);
+  }
+
+  #nameCaption {
+    position: fixed; left: 0; right: 0; bottom: 6%;
+    text-align: center; pointer-events: none; z-index: 40;
+    font-size: clamp(32px, 9vw, 72px); font-weight: 900;
+    color: #a15c22; text-shadow: 0 3px 0 #fff, 0 6px 14px rgba(0,0,0,.15);
+    opacity: 0; transform: translateY(10px) scale(0.9);
+  }
+  #nameCaption.show {
+    animation: captionPop 1.6s ease forwards;
+  }
+  @keyframes captionPop {
+    0%   { opacity: 0; transform: translateY(10px) scale(0.9); }
+    15%  { opacity: 1; transform: translateY(0) scale(1.05); }
+    25%  { transform: translateY(0) scale(1); }
+    80%  { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-10px) scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+  <div id="startEmoji">🧸</div>
+  <h1>Đồ Vật Quanh Nhà<br>Bé Vui Chơi</h1>
+  <button id="startBtn">Bắt đầu chơi ▶</button>
+</div>
+
+<div id="title">✨ Chạm vào đồ vật quanh nhà ✨</div>
+<button id="muteBtn" aria-label="Tắt/bật âm thanh">🔊</button>
+<div id="stage"></div>
+<div id="nameCaption"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var TWEMOJI_BASE = "https://cdn.jsdelivr.net/npm/@twemoji/svg@15.0.0/";
+
+  var ITEMS = [
+    { e: "🍼", cp: "1f37c", name: "Bình sữa", audio: "audio/item-0.mp3" },
+    { e: "🥄", cp: "1f944", name: "Cái muỗng", audio: "audio/item-1.mp3" },
+    { e: "🥣", cp: "1f963", name: "Cái bát", audio: "audio/item-2.mp3" },
+    { e: "👕", cp: "1f455", name: "Cái áo", audio: "audio/item-3.mp3" },
+    { e: "👖", cp: "1f456", name: "Cái quần", audio: "audio/item-4.mp3" },
+    { e: "🧦", cp: "1f9e6", name: "Đôi tất", audio: "audio/item-5.mp3" },
+    { e: "👟", cp: "1f45f", name: "Đôi giày", audio: "audio/item-6.mp3" },
+    { e: "🧢", cp: "1f9e2", name: "Cái mũ", audio: "audio/item-7.mp3" },
+    { e: "🪥", cp: "1faa5", name: "Bàn chải", audio: "audio/item-8.mp3" },
+    { e: "🧼", cp: "1f9fc", name: "Xà phòng", audio: "audio/item-9.mp3" },
+    { e: "🛁", cp: "1f6c1", name: "Bồn tắm", audio: "audio/item-10.mp3" },
+    { e: "🪞", cp: "1fa9e", name: "Cái gương", audio: "audio/item-11.mp3" },
+    { e: "🔑", cp: "1f511", name: "Chìa khóa", audio: "audio/item-12.mp3" },
+    { e: "📱", cp: "1f4f1", name: "Điện thoại", audio: "audio/item-13.mp3" },
+    { e: "⏰", cp: "23f0", name: "Đồng hồ", audio: "audio/item-14.mp3" },
+    { e: "💡", cp: "1f4a1", name: "Bóng đèn", audio: "audio/item-15.mp3" },
+    { e: "🚪", cp: "1f6aa", name: "Cái cửa", audio: "audio/item-16.mp3" },
+    { e: "🪟", cp: "1fa9f", name: "Cửa sổ", audio: "audio/item-17.mp3" },
+    { e: "🛏️", cp: "1f6cf", name: "Cái giường", audio: "audio/item-18.mp3" },
+    { e: "🪑", cp: "1fa91", name: "Cái ghế", audio: "audio/item-19.mp3" },
+    { e: "📺", cp: "1f4fa", name: "Ti vi", audio: "audio/item-20.mp3" },
+    { e: "🧸", cp: "1f9f8", name: "Gấu bông", audio: "audio/item-21.mp3" },
+    { e: "📖", cp: "1f4d6", name: "Quyển sách", audio: "audio/item-22.mp3" },
+    { e: "🎒", cp: "1f392", name: "Cái balo", audio: "audio/item-23.mp3" },
+    { e: "🧹", cp: "1f9f9", name: "Cái chổi", audio: "audio/item-24.mp3" },
+    { e: "🗑️", cp: "1f5d1", name: "Thùng rác", audio: "audio/item-25.mp3" },
+    { e: "🧻", cp: "1f9fb", name: "Giấy vệ sinh", audio: "audio/item-26.mp3" },
+    { e: "✏️", cp: "270f", name: "Cây bút", audio: "audio/item-27.mp3" }
+  ];
+
+  var stage = document.getElementById("stage");
+  var startScreen = document.getElementById("startScreen");
+  var startBtn = document.getElementById("startBtn");
+  var muteBtn = document.getElementById("muteBtn");
+  var nameCaption = document.getElementById("nameCaption");
+  var captionTimer = null;
+
+  function showCaption(text) {
+    nameCaption.textContent = text;
+    nameCaption.classList.remove("show");
+    void nameCaption.offsetWidth; // restart animation
+    nameCaption.classList.add("show");
+    if (captionTimer) clearTimeout(captionTimer);
+    captionTimer = setTimeout(function () { nameCaption.classList.remove("show"); }, 1600);
+  }
+
+  var muted = false;
+  var floaters = [];
+  var MAX_ITEMS = 4;
+  var running = false;
+
+  // ---- Audio (synthesized, no external files needed) ----
+  var audioCtx = null;
+  function ensureAudio() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+  function playChime() {
+    if (muted || !audioCtx) return;
+    var notes = [523.25, 659.25, 783.99]; // C5 E5 G5
+    notes.forEach(function (freq, i) {
+      var t0 = audioCtx.currentTime + i * 0.09;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.3);
+    });
+  }
+  // ---- Voice selection: prefer a clear female Vietnamese voice ----
+  var femaleVietnameseVoice = null;
+  var FEMALE_VOICE_HINTS = ["hoaimy", "linh", "google tiếng việt", "google tieng viet", "female", "nữ"];
+  var MALE_VOICE_HINTS = ["namminh", "male", "nam "];
+
+  function refreshVoices() {
+    if (!("speechSynthesis" in window)) return;
+    var voices = window.speechSynthesis.getVoices();
+    var viVoices = voices.filter(function (v) { return /^vi(-|_|$)/i.test(v.lang); });
+    if (!viVoices.length) { femaleVietnameseVoice = null; return; }
+
+    var byHint = viVoices.find(function (v) {
+      var n = v.name.toLowerCase();
+      return FEMALE_VOICE_HINTS.some(function (h) { return n.indexOf(h) !== -1; });
+    });
+    if (byHint) { femaleVietnameseVoice = byHint; return; }
+
+    var notMale = viVoices.find(function (v) {
+      var n = v.name.toLowerCase();
+      return !MALE_VOICE_HINTS.some(function (h) { return n.indexOf(h) !== -1; });
+    });
+    femaleVietnameseVoice = notMale || viVoices[0];
+  }
+
+  if ("speechSynthesis" in window) {
+    refreshVoices();
+    window.speechSynthesis.onvoiceschanged = refreshVoices;
+  }
+
+  function speak(text) {
+    if (muted) return;
+    if (!("speechSynthesis" in window)) return;
+    try {
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = "vi-VN";
+      if (femaleVietnameseVoice) u.voice = femaleVietnameseVoice;
+      u.rate = 0.65;
+      u.pitch = 1.2;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- Recorded voice clips (female Vietnamese, works on every browser) ----
+  var audioCache = {};
+  function getAudioClip(src) {
+    if (!audioCache[src]) {
+      var a = new Audio(src);
+      a.preload = "auto";
+      audioCache[src] = a;
+    }
+    return audioCache[src];
+  }
+  function preloadAllClips() {
+    ITEMS.forEach(function (it) { if (it.audio) getAudioClip(it.audio); });
+  }
+  function playVoice(item) {
+    if (muted) return;
+    if (!item.audio) { speak(item.name); return; }
+    try {
+      var clip = getAudioClip(item.audio);
+      clip.currentTime = 0;
+      var p = clip.play();
+      if (p && typeof p.catch === "function") p.catch(function () { speak(item.name); });
+    } catch (e) {
+      speak(item.name);
+    }
+  }
+
+  // ---- Floating items ----
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+  function pickItem() { return ITEMS[Math.floor(Math.random() * ITEMS.length)]; }
+
+  function spawnFloater() {
+    var data = pickItem();
+    var el = document.createElement("div");
+    el.className = "item";
+    var size = rand(110, 190);
+    el.style.width = size + "px";
+    el.style.height = size + "px";
+    if (data.cp) {
+      var img = document.createElement("img");
+      img.src = TWEMOJI_BASE + data.cp + ".svg";
+      img.alt = data.name;
+      img.draggable = false;
+      img.onerror = function () {
+        el.innerHTML = "";
+        el.textContent = data.e;
+        el.style.fontSize = size + "px";
+        el.style.lineHeight = "1";
+      };
+      el.appendChild(img);
+    } else {
+      el.textContent = data.e;
+      el.style.fontSize = size + "px";
+    }
+
+    var w = window.innerWidth, h = window.innerHeight;
+    var x = rand(0, w - size);
+    var y = rand(h * 0.18, h - size - 20);
+    var vx = rand(-0.6, 0.6) || 0.4;
+    var vy = rand(-0.6, 0.6) || 0.4;
+    if (Math.abs(vx) < 0.15) vx = 0.3 * (Math.random() < 0.5 ? -1 : 1);
+    if (Math.abs(vy) < 0.15) vy = 0.3 * (Math.random() < 0.5 ? -1 : 1);
+
+    var f = { el: el, data: data, x: x, y: y, vx: vx, vy: vy, size: size, angle: rand(0, 360), spin: rand(-0.3, 0.3) };
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+
+    el.addEventListener("pointerdown", function (ev) {
+      ev.preventDefault();
+      onPop(f);
+    }, { passive: false });
+
+    stage.appendChild(el);
+    floaters.push(f);
+  }
+
+  function onPop(f) {
+    if (f.popped) return;
+    f.popped = true;
+    ensureAudio();
+    playChime();
+    playVoice(f.data);
+    showCaption(f.data.e + " " + f.data.name);
+    burstParticles(f.x + f.size / 2, f.y + f.size / 2, f.data.e);
+    f.el.classList.add("pop");
+    setTimeout(function () {
+      if (f.el.parentNode) f.el.parentNode.removeChild(f.el);
+      floaters = floaters.filter(function (o) { return o !== f; });
+      spawnFloater();
+    }, 350);
+  }
+
+  var CELEBRATE = ["✨", "🎉", "⭐", "💖"];
+  function burstParticles(cx, cy, emoji) {
+    var count = 10;
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement("div");
+      p.className = "particle";
+      p.textContent = Math.random() < 0.5 ? emoji : CELEBRATE[Math.floor(Math.random() * CELEBRATE.length)];
+      p.style.left = cx + "px";
+      p.style.top = cy + "px";
+      var angle = (Math.PI * 2 * i) / count + rand(-0.3, 0.3);
+      var dist = rand(80, 160);
+      var dx = Math.cos(angle) * dist;
+      var dy = Math.sin(angle) * dist;
+      stage.appendChild(p);
+      var start = performance.now();
+      var dur = 600;
+      (function animateParticle(p, dx, dy, start, dur) {
+        function step(now) {
+          var t = Math.min(1, (now - start) / dur);
+          var ease = 1 - Math.pow(1 - t, 2);
+          p.style.transform = "translate(" + dx * ease + "px," + (dy * ease + t * t * 40) + "px) scale(" + (1 - t * 0.6) + ")";
+          p.style.opacity = String(1 - t);
+          if (t < 1) requestAnimationFrame(step);
+          else if (p.parentNode) p.parentNode.removeChild(p);
+        }
+        requestAnimationFrame(step);
+      })(p, dx, dy, start, dur);
+    }
+  }
+
+  function tick() {
+    if (!running) return;
+    var w = window.innerWidth, h = window.innerHeight;
+    for (var i = 0; i < floaters.length; i++) {
+      var f = floaters[i];
+      if (f.popped) continue;
+      f.x += f.vx;
+      f.y += f.vy;
+      f.angle += f.spin;
+      if (f.x <= 0 || f.x >= w - f.size) { f.vx *= -1; f.x = Math.max(0, Math.min(f.x, w - f.size)); }
+      if (f.y <= h * 0.12 || f.y >= h - f.size - 10) { f.vy *= -1; f.y = Math.max(h * 0.12, Math.min(f.y, h - f.size - 10)); }
+      f.el.style.transform = "translate(" + f.x + "px," + f.y + "px) rotate(" + f.angle + "deg)";
+      f.el.style.left = "0px";
+      f.el.style.top = "0px";
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function startGame() {
+    ensureAudio();
+    preloadAllClips();
+    startScreen.style.display = "none";
+    running = true;
+    for (var i = 0; i < MAX_ITEMS; i++) spawnFloater();
+    requestAnimationFrame(tick);
+  }
+
+  startBtn.addEventListener("click", startGame);
+  startBtn.addEventListener("touchend", function (e) { e.preventDefault(); startGame(); }, { passive: false });
+
+  muteBtn.addEventListener("click", function () {
+    muted = !muted;
+    muteBtn.textContent = muted ? "🔇" : "🔊";
+    if (muted && window.speechSynthesis) window.speechSynthesis.cancel();
+  });
+
+  document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+})();
+</script>
+</body>
+</html>

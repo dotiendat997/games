@@ -11,6 +11,9 @@ từ một repo duy nhất.
 - [`tho-vuot-rao/`](tho-vuot-rao/) — Thỏ Vượt Rào: bé vẽ đường cầu vồng
   bằng tay để chặn đàn thỏ đang đi qua, thỏ tự tìm cách nhảy/chui/vòng
   qua đường vẽ.
+- [`do-vat-quanh-nha/`](do-vat-quanh-nha/) — Đồ Vật Quanh Nhà: giống
+  Chạm Vui nhưng đổi bộ từ sang đồ vật hàng ngày (bình sữa, muỗng,
+  giày, bàn chải...), hợp bé đang tập nói.
 
 `index.html` ở thư mục gốc là trang chọn game, link tới từng thư mục con.
 
