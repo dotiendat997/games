@@ -408,7 +408,7 @@
       }
       case "blocked": {
         r.stateT += dt * 1000;
-        r.bobPhase += dt * 3; // slow idle sway while the group waits
+        r.bobPhase += dt * 7; // impatient little hops in place while waiting
         if (r.stateT > r.releaseAt) {
           var roll = Math.random();
           if (roll < 0.45) { r.state = "jump"; r.stateT = 0; playBoing(); }
@@ -450,7 +450,7 @@
     }
 
     var bob = r.state === "walk" ? Math.sin(r.bobPhase) * 3
-      : r.state === "blocked" ? Math.sin(r.bobPhase) * 1.6
+      : r.state === "blocked" ? Math.abs(Math.sin(r.bobPhase)) * 15
       : 0;
     var ty = r.y - r.hop + bob;
     r.el.style.transform = "translate(" + r.x + "px," + ty + "px) scaleY(" + r.squish + ")";
