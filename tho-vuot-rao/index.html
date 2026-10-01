@@ -336,7 +336,7 @@
 
   function loopLength() { return window.innerWidth + RABBIT_SIZE * 2; }
 
-  function makeRabbit(i) {
+  function makeRabbit(i, lanePhase) {
     var el = document.createElement("div");
     el.className = "rabbit";
     el.innerHTML = BUNNY_SVG;
@@ -347,10 +347,12 @@
     var spacing = loopLength() / perLane;
     return {
       el: el,
-      x: -RABBIT_SIZE + slot * spacing + rand(-15, 15),
+      // lanePhase shifts each lane's whole sequence by a random fraction of
+      // the spacing, so lanes don't line up into neat vertical columns.
+      x: -RABBIT_SIZE + slot * spacing + lanePhase[lane] * spacing + rand(-35, 35),
       lane: lane,
       y: laneY(lane),
-      speed: rand(46, 58),
+      speed: rand(36, 68),
       state: "walk",
       stateT: 0,
       hop: 0,
@@ -363,7 +365,9 @@
   function spawnRabbits() {
     rabbitsLayer.innerHTML = "";
     rabbits = [];
-    for (var i = 0; i < RABBIT_COUNT; i++) rabbits.push(makeRabbit(i));
+    var lanePhase = [];
+    for (var l = 0; l < LANE_COUNT; l++) lanePhase.push(rand(0, 1));
+    for (var i = 0; i < RABBIT_COUNT; i++) rabbits.push(makeRabbit(i, lanePhase));
   }
 
   function burstSparkle(x, y) {
