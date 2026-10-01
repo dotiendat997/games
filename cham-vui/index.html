@@ -54,10 +54,11 @@
   #startBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #d9557d; }
 
   .item {
-    position: absolute; font-size: 90px; line-height: 1;
+    position: absolute; line-height: 1;
     cursor: pointer; filter: drop-shadow(0 6px 6px rgba(0,0,0,.15));
     will-change: transform; z-index: 3;
   }
+  .item img { display: block; width: 100%; height: 100%; pointer-events: none; -webkit-user-drag: none; }
   .item.pop { animation: popAway .35s ease forwards; pointer-events: none; }
   @keyframes popAway {
     0%   { transform: scale(1); opacity: 1; }
@@ -113,37 +114,39 @@
 (function () {
   "use strict";
 
+  var TWEMOJI_BASE = "https://cdn.jsdelivr.net/npm/@twemoji/svg@15.0.0/";
+
   var ITEMS = [
-    { e: "🐱", name: "Con mèo", audio: "audio/item-0.mp3" },
-    { e: "🐶", name: "Con chó", audio: "audio/item-1.mp3" },
-    { e: "🐮", name: "Con bò", audio: "audio/item-2.mp3" },
-    { e: "🐷", name: "Con lợn", audio: "audio/item-3.mp3" },
-    { e: "🐔", name: "Con gà", audio: "audio/item-4.mp3" },
-    { e: "🦆", name: "Con vịt", audio: "audio/item-5.mp3" },
-    { e: "🐘", name: "Con voi", audio: "audio/item-6.mp3" },
-    { e: "🦁", name: "Con sư tử", audio: "audio/item-7.mp3" },
-    { e: "🐵", name: "Con khỉ", audio: "audio/item-8.mp3" },
-    { e: "🐰", name: "Con thỏ", audio: "audio/item-9.mp3" },
-    { e: "🐢", name: "Con rùa", audio: "audio/item-10.mp3" },
-    { e: "🐟", name: "Con cá", audio: "audio/item-11.mp3" },
-    { e: "🦋", name: "Con bướm", audio: "audio/item-12.mp3" },
-    { e: "🍎", name: "Quả táo", audio: "audio/item-13.mp3" },
-    { e: "🍌", name: "Quả chuối", audio: "audio/item-14.mp3" },
-    { e: "🍊", name: "Quả cam", audio: "audio/item-15.mp3" },
-    { e: "🍇", name: "Quả nho", audio: "audio/item-16.mp3" },
-    { e: "🍉", name: "Quả dưa hấu", audio: "audio/item-17.mp3" },
-    { e: "🍓", name: "Quả dâu", audio: "audio/item-18.mp3" },
-    { e: "⭐", name: "Ngôi sao", audio: "audio/item-19.mp3" },
-    { e: "❤️", name: "Trái tim", audio: "audio/item-20.mp3" },
-    { e: "🌞", name: "Ông mặt trời", audio: "audio/item-21.mp3" },
-    { e: "🌙", name: "Mặt trăng", audio: "audio/item-22.mp3" },
-    { e: "🚗", name: "Ô tô", audio: "audio/item-23.mp3" },
-    { e: "🚌", name: "Xe buýt", audio: "audio/item-24.mp3" },
-    { e: "✈️", name: "Máy bay", audio: "audio/item-25.mp3" },
-    { e: "🚂", name: "Tàu hỏa", audio: "audio/item-26.mp3" },
-    { e: "🎈", name: "Bóng bay", audio: "audio/item-27.mp3" },
-    { e: "🌈", name: "Cầu vồng", audio: "audio/item-28.mp3" },
-    { e: "⚽", name: "Quả bóng", audio: "audio/item-29.mp3" }
+    { e: "🐱", cp: "1f431", name: "Con mèo", audio: "audio/item-0.mp3" },
+    { e: "🐶", cp: "1f436", name: "Con chó", audio: "audio/item-1.mp3" },
+    { e: "🐮", cp: "1f42e", name: "Con bò", audio: "audio/item-2.mp3" },
+    { e: "🐷", cp: "1f437", name: "Con lợn", audio: "audio/item-3.mp3" },
+    { e: "🐔", cp: "1f414", name: "Con gà", audio: "audio/item-4.mp3" },
+    { e: "🦆", cp: "1f986", name: "Con vịt", audio: "audio/item-5.mp3" },
+    { e: "🐘", cp: "1f418", name: "Con voi", audio: "audio/item-6.mp3" },
+    { e: "🦁", cp: "1f981", name: "Con sư tử", audio: "audio/item-7.mp3" },
+    { e: "🐵", cp: "1f435", name: "Con khỉ", audio: "audio/item-8.mp3" },
+    { e: "🐰", cp: "1f430", name: "Con thỏ", audio: "audio/item-9.mp3" },
+    { e: "🐢", cp: "1f422", name: "Con rùa", audio: "audio/item-10.mp3" },
+    { e: "🐟", cp: "1f41f", name: "Con cá", audio: "audio/item-11.mp3" },
+    { e: "🦋", cp: "1f98b", name: "Con bướm", audio: "audio/item-12.mp3" },
+    { e: "🍎", cp: "1f34e", name: "Quả táo", audio: "audio/item-13.mp3" },
+    { e: "🍌", cp: "1f34c", name: "Quả chuối", audio: "audio/item-14.mp3" },
+    { e: "🍊", cp: "1f34a", name: "Quả cam", audio: "audio/item-15.mp3" },
+    { e: "🍇", cp: "1f347", name: "Quả nho", audio: "audio/item-16.mp3" },
+    { e: "🍉", cp: "1f349", name: "Quả dưa hấu", audio: "audio/item-17.mp3" },
+    { e: "🍓", cp: "1f353", name: "Quả dâu", audio: "audio/item-18.mp3" },
+    { e: "⭐", cp: "2b50", name: "Ngôi sao", audio: "audio/item-19.mp3" },
+    { e: "❤️", cp: "2764", name: "Trái tim", audio: "audio/item-20.mp3" },
+    { e: "🌞", cp: "1f31e", name: "Ông mặt trời", audio: "audio/item-21.mp3" },
+    { e: "🌙", cp: "1f319", name: "Mặt trăng", audio: "audio/item-22.mp3" },
+    { e: "🚗", cp: "1f697", name: "Ô tô", audio: "audio/item-23.mp3" },
+    { e: "🚌", cp: "1f68c", name: "Xe buýt", audio: "audio/item-24.mp3" },
+    { e: "✈️", cp: "2708", name: "Máy bay", audio: "audio/item-25.mp3" },
+    { e: "🚂", cp: "1f682", name: "Tàu hỏa", audio: "audio/item-26.mp3" },
+    { e: "🎈", cp: "1f388", name: "Bóng bay", audio: "audio/item-27.mp3" },
+    { e: "🌈", cp: "1f308", name: "Cầu vồng", audio: "audio/item-28.mp3" },
+    { e: "⚽", cp: "26bd", name: "Quả bóng", audio: "audio/item-29.mp3" }
   ];
 
   var stage = document.getElementById("stage");
@@ -164,7 +167,7 @@
 
   var muted = false;
   var floaters = [];
-  var MAX_ITEMS = 3;
+  var MAX_ITEMS = 4;
   var running = false;
 
   // ---- Audio (synthesized, no external files needed) ----
@@ -270,9 +273,25 @@
     var data = pickItem();
     var el = document.createElement("div");
     el.className = "item";
-    el.textContent = data.e;
-    var size = rand(90, 150);
-    el.style.fontSize = size + "px";
+    var size = rand(110, 190);
+    el.style.width = size + "px";
+    el.style.height = size + "px";
+    if (data.cp) {
+      var img = document.createElement("img");
+      img.src = TWEMOJI_BASE + data.cp + ".svg";
+      img.alt = data.name;
+      img.draggable = false;
+      img.onerror = function () {
+        el.innerHTML = "";
+        el.textContent = data.e;
+        el.style.fontSize = size + "px";
+        el.style.lineHeight = "1";
+      };
+      el.appendChild(img);
+    } else {
+      el.textContent = data.e;
+      el.style.fontSize = size + "px";
+    }
 
     var w = window.innerWidth, h = window.innerHeight;
     var x = rand(0, w - size);

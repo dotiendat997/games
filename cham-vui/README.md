@@ -32,5 +32,9 @@ python3 -m http.server 8000
 - Mỗi lần chạm cũng hiện chữ tên con vật/đồ vật trên màn hình, nên vẫn
   học được tên kể cả khi không nghe được âm thanh.
 - Có nút loa ở góc trên bên phải để tắt/bật âm thanh.
-- Cần internet lần đầu tải trang (để tải các file mp3, ~330KB); sau đó
-  trình duyệt cache lại, không cần internet nữa.
+- Hình ảnh con vật/đồ vật dùng bộ icon [Twemoji](https://github.com/twitter/twemoji)
+  (CC-BY 4.0) tải qua CDN jsdelivr — chi tiết và nhất quán trên mọi máy,
+  không phụ thuộc font emoji của từng hệ điều hành. Nếu tải ảnh lỗi
+  (mất mạng), game tự động rơi về emoji chữ của trình duyệt.
+- Cần internet lần đầu tải trang (để tải file mp3 + hình Twemoji); sau
+  đó trình duyệt cache lại, không cần internet nữa.
