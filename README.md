@@ -14,6 +14,8 @@ từ một repo duy nhất.
 - [`do-vat-quanh-nha/`](do-vat-quanh-nha/) — Đồ Vật Quanh Nhà: giống
   Chạm Vui nhưng đổi bộ từ sang đồ vật hàng ngày (bình sữa, muỗng,
   giày, bàn chải...), hợp bé đang tập nói.
+- [`hoc-so/`](hoc-so/) — Học Số: chạm số 1-9, nghe tên số và thấy đúng
+  số lượng đồ vật hiện ra.
 
 `index.html` ở thư mục gốc là trang chọn game, link tới từng thư mục con.
 

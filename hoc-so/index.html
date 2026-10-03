@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Học Số - Bé Vui Chơi</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; touch-action: manipulation; user-select: none;
+    font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
+  }
+  body { background: linear-gradient(135deg, #e3f2ff, #fff3d6, #e6ffe9); }
+
+  #startScreen {
+    position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 24px;
+    background: radial-gradient(circle at 50% 30%, #fff8e6, #dff0ff);
+  }
+  #startScreen h1 { font-size: clamp(28px, 8vw, 56px); color: #2a5d9f; margin: 0; text-align: center; text-shadow: 0 3px 0 #fff; }
+  #startEmoji { font-size: clamp(60px, 18vw, 130px); animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-4deg);} 50% { transform: translateY(-16px) rotate(4deg);} }
+  #startBtn {
+    font-size: clamp(20px, 5vw, 34px); font-weight: 800; color: #fff;
+    background: linear-gradient(135deg,#4ea8ff,#ffb84d);
+    border: none; border-radius: 999px; padding: 18px 48px;
+    box-shadow: 0 8px 0 #2a6fb8, 0 14px 24px rgba(0,0,0,.2); cursor: pointer;
+  }
+  #startBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #2a6fb8; }
+
+  #app {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    padding: 12px 12px 16px;
+  }
+  #topBar { display: flex; justify-content: flex-end; }
+  #muteBtn {
+    width: 52px; height: 52px; border-radius: 50%; border: none;
+    background: #ffffffdd; font-size: 24px; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,.15);
+  }
+
+  #stage {
+    flex: 1; position: relative; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #countArea {
+    position: absolute; inset: 0; display: flex; flex-wrap: wrap;
+    align-content: center; justify-content: center; gap: 10px; padding: 10px;
+    pointer-events: none;
+  }
+  #countArea img {
+    width: clamp(70px, 16vmin, 130px); height: clamp(70px, 16vmin, 130px);
+    opacity: 0; transform: scale(0.3);
+    transition: opacity .25s ease, transform .35s cubic-bezier(.2,1.6,.4,1);
+  }
+  #countArea img.in { opacity: 1; transform: scale(1); }
+
+  #bigNumber {
+    position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+    text-align: center; font-size: clamp(120px, 40vmin, 320px); font-weight: 900;
+    color: #2a5d9f; text-shadow: 0 6px 0 #fff, 0 12px 24px rgba(0,0,0,.15);
+    opacity: 0; pointer-events: none;
+  }
+  #bigNumber.show { animation: numPop 1.4s ease forwards; }
+  @keyframes numPop {
+    0%   { opacity: 0; transform: translateY(-50%) scale(0.5); }
+    15%  { opacity: 0.35; transform: translateY(-50%) scale(1.08); }
+    25%  { opacity: 0.35; transform: translateY(-50%) scale(1); }
+    80%  { opacity: 0.35; transform: translateY(-50%) scale(1); }
+    100% { opacity: 0; transform: translateY(-50%) scale(1); }
+  }
+
+  #pad {
+    display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+    gap: clamp(8px, 2vmin, 14px); height: 40vh; min-height: 210px; max-height: 360px;
+  }
+  .numBtn {
+    font-size: clamp(48px, 10vmin, 96px); font-weight: 900; color: #fff; min-height: 0;
+    border: none; border-radius: 28px; cursor: pointer;
+    box-shadow: 0 8px 0 rgba(0,0,0,.18), 0 12px 18px rgba(0,0,0,.12);
+    transition: transform .08s;
+    padding: 0; line-height: 1;
+  }
+  .numBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 rgba(0,0,0,.18); }
+
+  #caption {
+    position: fixed; left: 0; right: 0; bottom: 36vh; text-align: center;
+    font-size: clamp(28px, 7vw, 56px); font-weight: 900; color: #2a5d9f;
+    text-shadow: 0 3px 0 #fff; pointer-events: none; opacity: 0;
+  }
+  #caption.show { animation: captionPop 1.6s ease forwards; }
+  @keyframes captionPop {
+    0% { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+  <div id="startEmoji">🔢</div>
+  <h1>Học Số<br>Bé Vui Chơi</h1>
+  <button id="startBtn">Bắt đầu chơi ▶</button>
+</div>
+
+<div id="app">
+  <div id="topBar"><button id="muteBtn" aria-label="Tắt/bật âm thanh">🔊</button></div>
+  <div id="stage">
+    <div id="countArea"></div>
+    <div id="bigNumber"></div>
+  </div>
+  <div id="pad"></div>
+</div>
+<div id="caption"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var TWEMOJI_BASE = "https://cdn.jsdelivr.net/npm/@twemoji/svg@15.0.0/";
+  var OBJECTS = ["1f34e", "2b50", "1f388", "1f338"]; // táo, sao, bóng bay, hoa
+  var WORDS = ["Một", "Hai", "Ba", "Bốn", "Năm", "Sáu", "Bảy", "Tám", "Chín"];
+  var COLORS = ["#ff6b6b", "#ff9f43", "#feca57", "#1dd1a1", "#48dbfb", "#54a0ff", "#5f27cd", "#ff9ff3", "#00d2d3"];
+
+  var muted = false;
+  var audioCtx = null;
+  var clipCache = {};
+  var countTimers = [];
+
+  var countArea = document.getElementById("countArea");
+  var bigNumber = document.getElementById("bigNumber");
+  var pad = document.getElementById("pad");
+  var caption = document.getElementById("caption");
+  var muteBtn = document.getElementById("muteBtn");
+  var startScreen = document.getElementById("startScreen");
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+
+  function tick(pitch) {
+    if (muted || !audioCtx) return;
+    var t0 = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = pitch;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.2, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.16);
+  }
+
+  function playNumberClip(n) {
+    if (muted) return;
+    var src = "audio/num-" + n + ".mp3";
+    if (!clipCache[src]) {
+      clipCache[src] = new Audio(src);
+      clipCache[src].preload = "auto";
+    }
+    var clip = clipCache[src];
+    try {
+      clip.currentTime = 0;
+      var p = clip.play();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+  }
+
+  function showCaption(text) {
+    caption.textContent = text;
+    caption.classList.remove("show");
+    void caption.offsetWidth;
+    caption.classList.add("show");
+  }
+
+  function clearCount() {
+    countTimers.forEach(clearTimeout);
+    countTimers = [];
+    countArea.innerHTML = "";
+  }
+
+  function showNumber(n) {
+    ensureAudio();
+    clearCount();
+
+    bigNumber.textContent = String(n);
+    bigNumber.classList.remove("show");
+    void bigNumber.offsetWidth;
+    bigNumber.classList.add("show");
+
+    showCaption(n + " - " + WORDS[n - 1]);
+    playNumberClip(n);
+
+    var obj = OBJECTS[Math.floor(Math.random() * OBJECTS.length)];
+    for (var i = 0; i < n; i++) {
+      (function (i) {
+        countTimers.push(setTimeout(function () {
+          var img = document.createElement("img");
+          img.src = TWEMOJI_BASE + obj + ".svg";
+          img.alt = "";
+          img.draggable = false;
+          countArea.appendChild(img);
+          requestAnimationFrame(function () { img.classList.add("in"); });
+          tick(520 + i * 90);
+        }, 450 + i * 420));
+      })(i);
+    }
+  }
+
+  for (var n = 1; n <= 9; n++) {
+    var b = document.createElement("button");
+    b.className = "numBtn";
+    b.textContent = String(n);
+    b.style.background = COLORS[n - 1];
+    b.setAttribute("aria-label", "Số " + n);
+    (function (n) {
+      b.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+        showNumber(n);
+      });
+    })(n);
+    pad.appendChild(b);
+  }
+
+  document.getElementById("startBtn").addEventListener("click", function () {
+    ensureAudio();
+    startScreen.style.display = "none";
+  });
+
+  muteBtn.addEventListener("click", function () {
+    muted = !muted;
+    muteBtn.textContent = muted ? "🔇" : "🔊";
+  });
+
+  document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+})();
+</script>
+</body>
+</html>
