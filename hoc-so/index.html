@@ -77,6 +77,7 @@
     transition: opacity .25s ease, transform .35s cubic-bezier(.2,1.6,.4,1);
   }
   #countArea img.in { opacity: 1; transform: scale(1); }
+  #countArea img.big { width: clamp(84px, 19vmin, 160px); height: clamp(84px, 19vmin, 160px); }
 
   #caption {
     position: fixed; left: 0; right: 0; top: 10%; text-align: center;
@@ -109,10 +110,15 @@
   "use strict";
 
   var TWEMOJI_BASE = "https://cdn.jsdelivr.net/npm/@twemoji/svg@15.0.0/";
-  var OBJECTS = ["1f34e", "2b50", "1f388", "1f338"]; // táo, sao, bóng bay, hoa
+  var OBJECTS = [
+    { cp: "1f34e", clip: "audio/obj-0.mp3" },
+    { cp: "2b50", clip: "audio/obj-1.mp3", big: true },
+    { cp: "1f388", clip: "audio/obj-2.mp3" },
+    { cp: "1f338", clip: "audio/obj-3.mp3" }
+  ];
   var WORDS = ["Một", "Hai", "Ba", "Bốn", "Năm", "Sáu", "Bảy", "Tám", "Chín"];
   var COLORS = ["#ff6b6b", "#ff9f43", "#f0b400", "#1dd1a1", "#2e9bff", "#7a5cff", "#ff6fb5", "#00b8c4", "#8bc34a"];
-  var NEXT_DELAY_MS = 3200;
+  var NEXT_DELAY_MS = 5600;
 
   var muted = false;
   var audioCtx = null;
@@ -153,9 +159,8 @@
     osc.stop(t0 + 0.16);
   }
 
-  function playNumberClip(n) {
+  function playClip(src) {
     if (muted) return;
-    var src = "audio/num-" + n + ".mp3";
     if (!clipCache[src]) {
       clipCache[src] = new Audio(src);
       clipCache[src].preload = "auto";
@@ -225,20 +230,24 @@
     tile.classList.add("pick");
 
     showCaption(current + " - " + WORDS[current - 1]);
-    playNumberClip(current);
+    playClip("audio/num-" + current + ".mp3");
 
     var obj = OBJECTS[Math.floor(Math.random() * OBJECTS.length)];
+    countTimers.push(setTimeout(function () {
+      playClip(obj.clip);
+    }, 800));
     for (var i = 0; i < current; i++) {
       (function (i) {
         countTimers.push(setTimeout(function () {
           var img = document.createElement("img");
-          img.src = TWEMOJI_BASE + obj + ".svg";
+          img.src = TWEMOJI_BASE + obj.cp + ".svg";
           img.alt = "";
           img.draggable = false;
+          if (obj.big) img.className = "big";
           countArea.appendChild(img);
           requestAnimationFrame(function () { img.classList.add("in"); });
           tick(520 + i * 90);
-        }, 450 + i * 420));
+        }, 1500 + i * 420));
       })(i);
     }
 
