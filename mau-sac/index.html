@@ -74,7 +74,7 @@
 
   #caption {
     position: fixed; left: 0; right: 0; top: 10%; text-align: center;
-    font-size: clamp(28px, 7vw, 56px); font-weight: 900; color: #5a3d8f;
+    font-size: clamp(22px, 5vw, 44px); font-weight: 900; color: #5a3d8f; padding: 0 16px;
     text-shadow: 0 3px 0 #fff; pointer-events: none; opacity: 0;
   }
   #caption.show { animation: captionPop 1.6s ease forwards; }
@@ -101,13 +101,27 @@
 
   var TWEMOJI_BASE = "https://cdn.jsdelivr.net/npm/@twemoji/svg@15.0.0/";
   var COLORS = [
-    { name: "Đỏ",         hex: "#ff4d4d", clip: "audio/color-0.mp3", objs: ["1f34e", "1f353"] },
-    { name: "Cam",        hex: "#ff9a3c", clip: "audio/color-1.mp3", objs: ["1f34a", "1f955"] },
-    { name: "Vàng",       hex: "#ffd21f", clip: "audio/color-2.mp3", objs: ["1f34c", "2b50", "1f425"] },
-    { name: "Xanh lá",    hex: "#35c759", clip: "audio/color-3.mp3", objs: ["1f438", "1f966"] },
-    { name: "Xanh dương", hex: "#3b8cff", clip: "audio/color-4.mp3", objs: ["1f41f", "1f433"] },
-    { name: "Tím",        hex: "#9b59ff", clip: "audio/color-5.mp3", objs: ["1f347", "1f98b"] },
-    { name: "Hồng",       hex: "#ff7eb9", clip: "audio/color-6.mp3", objs: ["1f338", "1f437"] }
+    { hex: "#ff4d4d", objs: [
+      { cp: "1f34e", clip: "audio/phrase-0-0.mp3", phrase: "4 quả táo màu đỏ" },
+      { cp: "1f353", clip: "audio/phrase-0-1.mp3", phrase: "4 quả dâu màu đỏ" } ] },
+    { hex: "#ff9a3c", objs: [
+      { cp: "1f34a", clip: "audio/phrase-1-0.mp3", phrase: "4 quả cam màu cam" },
+      { cp: "1f955", clip: "audio/phrase-1-1.mp3", phrase: "4 củ cà rốt màu cam" } ] },
+    { hex: "#ffd21f", objs: [
+      { cp: "1f34c", clip: "audio/phrase-2-0.mp3", phrase: "4 quả chuối màu vàng" },
+      { cp: "2b50", clip: "audio/phrase-2-1.mp3", phrase: "4 ngôi sao màu vàng" } ] },
+    { hex: "#35c759", objs: [
+      { cp: "1f438", clip: "audio/phrase-3-0.mp3", phrase: "4 con ếch màu xanh lá" },
+      { cp: "1f966", clip: "audio/phrase-3-1.mp3", phrase: "4 bông cải màu xanh lá" } ] },
+    { hex: "#3b8cff", objs: [
+      { cp: "1f41f", clip: "audio/phrase-4-0.mp3", phrase: "4 con cá màu xanh dương" },
+      { cp: "1f433", clip: "audio/phrase-4-1.mp3", phrase: "4 con cá voi màu xanh dương" } ] },
+    { hex: "#9b59ff", objs: [
+      { cp: "1f347", clip: "audio/phrase-5-0.mp3", phrase: "4 chùm nho màu tím" },
+      { cp: "1f98b", clip: "audio/phrase-5-1.mp3", phrase: "4 con bướm màu tím" } ] },
+    { hex: "#ff7eb9", objs: [
+      { cp: "1f338", clip: "audio/phrase-6-0.mp3", phrase: "4 bông hoa màu hồng" },
+      { cp: "1f437", clip: "audio/phrase-6-1.mp3", phrase: "4 con heo màu hồng" } ] }
   ];
   var OBJ_COUNT = 4;
   var NEXT_DELAY_MS = 5200;
@@ -214,7 +228,7 @@
   }
 
   // Objects of the color line up in slots across the lower part of the screen.
-  function scatterObjects(color) {
+  function scatterObjects(obj) {
     var size = Math.round(tileSize() * 0.6);
     var slotW = window.innerWidth / OBJ_COUNT;
     var baseY = window.innerHeight * 0.62 + Math.random() * window.innerHeight * 0.08;
@@ -224,7 +238,7 @@
           var el = document.createElement("div");
           el.className = "obj";
           var img = document.createElement("img");
-          img.src = TWEMOJI_BASE + color.objs[i % color.objs.length] + ".svg";
+          img.src = TWEMOJI_BASE + obj.cp + ".svg";
           img.alt = "";
           img.draggable = false;
           el.appendChild(img);
@@ -245,13 +259,14 @@
     ensureAudio();
     clearObjects();
     var color = COLORS[currentIdx];
+    var obj = color.objs[Math.floor(Math.random() * color.objs.length)];
     tile.classList.remove("pick");
     void tile.offsetWidth;
     tile.classList.add("pick");
 
-    showCaption(color.name);
-    playClip(color.clip);
-    scatterObjects(color);
+    showCaption(obj.phrase);
+    playClip(obj.clip);
+    scatterObjects(obj);
 
     timers.push(setTimeout(function () {
       clearObjects();
