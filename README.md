@@ -16,6 +16,8 @@ từ một repo duy nhất.
   giày, bàn chải...), hợp bé đang tập nói.
 - [`hoc-so/`](hoc-so/) — Học Số: chạm số 1-9, nghe tên số và thấy đúng
   số lượng đồ vật hiện ra.
+- [`mau-sac/`](mau-sac/) — Màu Sắc: chạm ô màu, nghe tên màu và thấy các
+  đồ vật cùng màu xuất hiện.
 
 `index.html` ở thư mục gốc là trang chọn game, link tới từng thư mục con.
 

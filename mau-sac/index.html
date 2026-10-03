@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Màu Sắc - Bé Vui Chơi</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; touch-action: none; user-select: none;
+    font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
+  }
+  body { background: linear-gradient(135deg, #fff7e0, #eaf6ff, #f6eaff); }
+
+  #startScreen {
+    position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 24px;
+    background: radial-gradient(circle at 50% 30%, #ffffff, #fff0f7);
+  }
+  #startScreen h1 { font-size: clamp(28px, 8vw, 56px); color: #6a3fb0; margin: 0; text-align: center; text-shadow: 0 3px 0 #fff; }
+  #startEmoji { font-size: clamp(60px, 18vw, 130px); animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-4deg);} 50% { transform: translateY(-16px) rotate(4deg);} }
+  #startBtn {
+    font-size: clamp(20px, 5vw, 34px); font-weight: 800; color: #fff;
+    background: linear-gradient(135deg,#ff6fb5,#7a5cff);
+    border: none; border-radius: 999px; padding: 18px 48px;
+    box-shadow: 0 8px 0 #4f3ab0, 0 14px 24px rgba(0,0,0,.2); cursor: pointer;
+  }
+  #startBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #4f3ab0; }
+
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+
+  #muteBtn {
+    position: fixed; top: 14px; right: 14px; z-index: 60;
+    width: 52px; height: 52px; border-radius: 50%; border: none;
+    background: #ffffffdd; font-size: 24px; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,.15);
+  }
+
+  #tile {
+    position: absolute; left: 0; top: 0;
+    width: var(--tile); height: var(--tile);
+    transition: left .6s cubic-bezier(.3,1.4,.5,1), top .6s cubic-bezier(.3,1.4,.5,1);
+    cursor: pointer; z-index: 3; touch-action: manipulation;
+  }
+  #tileFace {
+    width: 100%; height: 100%; border-radius: 50%;
+    box-shadow: inset -12px -14px 0 rgba(0,0,0,.12), 0 12px 24px rgba(0,0,0,.18);
+    animation: hop 0.9s ease-in-out infinite;
+  }
+  @keyframes hop {
+    0%, 100% { transform: translateY(0) scale(1.06, 0.92); }
+    20%      { transform: translateY(0) scale(1, 1); }
+    50%      { transform: translateY(-14%) scale(0.96, 1.05); }
+    80%      { transform: translateY(0) scale(1, 1); }
+  }
+  #tile.pick #tileFace { animation: spin .8s ease; }
+  @keyframes spin {
+    0%   { transform: rotate(0) scale(1); }
+    50%  { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+
+  .obj {
+    position: absolute; width: var(--obj); height: var(--obj); z-index: 2;
+    opacity: 0; transform: scale(0.3);
+    transition: opacity .25s ease, transform .35s cubic-bezier(.2,1.6,.4,1);
+    pointer-events: none;
+  }
+  .obj.in { opacity: 1; transform: scale(1); }
+  .obj img { display: block; width: 100%; height: 100%; }
+
+  #caption {
+    position: fixed; left: 0; right: 0; top: 10%; text-align: center;
+    font-size: clamp(28px, 7vw, 56px); font-weight: 900; color: #5a3d8f;
+    text-shadow: 0 3px 0 #fff; pointer-events: none; opacity: 0;
+  }
+  #caption.show { animation: captionPop 1.6s ease forwards; }
+  @keyframes captionPop {
+    0% { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+  <div id="startEmoji">🎨</div>
+  <h1>Màu Sắc<br>Bé Vui Chơi</h1>
+  <button id="startBtn">Bắt đầu chơi ▶</button>
+</div>
+
+<button id="muteBtn" aria-label="Tắt/bật âm thanh">🔊</button>
+<div id="stage"></div>
+<div id="caption"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var TWEMOJI_BASE = "https://cdn.jsdelivr.net/npm/@twemoji/svg@15.0.0/";
+  var COLORS = [
+    { name: "Đỏ",         hex: "#ff4d4d", clip: "audio/color-0.mp3", objs: ["1f34e", "1f353"] },
+    { name: "Cam",        hex: "#ff9a3c", clip: "audio/color-1.mp3", objs: ["1f34a", "1f955"] },
+    { name: "Vàng",       hex: "#ffd21f", clip: "audio/color-2.mp3", objs: ["1f34c", "2b50", "1f425"] },
+    { name: "Xanh lá",    hex: "#35c759", clip: "audio/color-3.mp3", objs: ["1f438", "1f966"] },
+    { name: "Xanh dương", hex: "#3b8cff", clip: "audio/color-4.mp3", objs: ["1f41f", "1f433"] },
+    { name: "Tím",        hex: "#9b59ff", clip: "audio/color-5.mp3", objs: ["1f347", "1f98b"] },
+    { name: "Hồng",       hex: "#ff7eb9", clip: "audio/color-6.mp3", objs: ["1f338", "1f437"] }
+  ];
+  var OBJ_COUNT = 4;
+  var NEXT_DELAY_MS = 5200;
+
+  var muted = false;
+  var audioCtx = null;
+  var clipCache = {};
+  var timers = [];
+  var currentIdx = -1;
+  var busy = false;
+
+  var stage = document.getElementById("stage");
+  var tile = document.createElement("div");
+  tile.id = "tile";
+  var tileFace = document.createElement("div");
+  tileFace.id = "tileFace";
+  tile.appendChild(tileFace);
+  stage.appendChild(tile);
+  var caption = document.getElementById("caption");
+  var muteBtn = document.getElementById("muteBtn");
+  var startScreen = document.getElementById("startScreen");
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+
+  function tick(pitch) {
+    if (muted || !audioCtx) return;
+    var t0 = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = pitch;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.2, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.16);
+  }
+
+  function playClip(src) {
+    if (muted) return;
+    if (!clipCache[src]) {
+      clipCache[src] = new Audio(src);
+      clipCache[src].preload = "auto";
+    }
+    var clip = clipCache[src];
+    try {
+      clip.currentTime = 0;
+      var p = clip.play();
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+  }
+
+  function showCaption(text) {
+    caption.textContent = text;
+    caption.classList.remove("show");
+    void caption.offsetWidth;
+    caption.classList.add("show");
+  }
+
+  function clearObjects() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    Array.prototype.slice.call(stage.querySelectorAll(".obj")).forEach(function (el) { el.remove(); });
+  }
+
+  function tileSize() {
+    return Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.38);
+  }
+
+  function placeTile(animate) {
+    var size = tileSize();
+    stage.style.setProperty("--tile", size + "px");
+    var maxX = Math.max(16, window.innerWidth - size - 16);
+    var minY = window.innerHeight * 0.18;
+    var maxY = Math.max(minY, window.innerHeight * 0.55 - size);
+    var x = 16 + Math.random() * (maxX - 16);
+    var y = minY + Math.random() * (maxY - minY);
+    tile.style.transition = animate ? "" : "none";
+    tile.style.left = x + "px";
+    tile.style.top = y + "px";
+    if (!animate) { void tile.offsetWidth; tile.style.transition = ""; }
+  }
+
+  function pickNext() {
+    var i;
+    do { i = Math.floor(Math.random() * COLORS.length); } while (i === currentIdx);
+    return i;
+  }
+
+  function showColorTile(idx) {
+    currentIdx = idx;
+    tileFace.style.background = COLORS[idx].hex;
+    stage.style.setProperty("--obj", Math.round(tileSize() * 0.6) + "px");
+    placeTile(true);
+    tile.classList.remove("pick");
+    busy = false;
+  }
+
+  // Objects of the color line up in slots across the lower part of the screen.
+  function scatterObjects(color) {
+    var size = Math.round(tileSize() * 0.6);
+    var slotW = window.innerWidth / OBJ_COUNT;
+    var baseY = window.innerHeight * 0.62 + Math.random() * window.innerHeight * 0.08;
+    for (var i = 0; i < OBJ_COUNT; i++) {
+      (function (i) {
+        timers.push(setTimeout(function () {
+          var el = document.createElement("div");
+          el.className = "obj";
+          var img = document.createElement("img");
+          img.src = TWEMOJI_BASE + color.objs[i % color.objs.length] + ".svg";
+          img.alt = "";
+          img.draggable = false;
+          el.appendChild(img);
+          var x = i * slotW + (slotW - size) / 2 + (Math.random() - 0.5) * slotW * 0.2;
+          el.style.left = Math.max(0, Math.min(window.innerWidth - size, x)) + "px";
+          el.style.top = Math.min(window.innerHeight - size - 12, baseY + (Math.random() - 0.5) * 40) + "px";
+          stage.appendChild(el);
+          requestAnimationFrame(function () { el.classList.add("in"); });
+          tick(480 + i * 110);
+        }, 1100 + i * 380));
+      })(i);
+    }
+  }
+
+  function reveal() {
+    if (busy || currentIdx < 0) return;
+    busy = true;
+    ensureAudio();
+    clearObjects();
+    var color = COLORS[currentIdx];
+    tile.classList.remove("pick");
+    void tile.offsetWidth;
+    tile.classList.add("pick");
+
+    showCaption(color.name);
+    playClip(color.clip);
+    scatterObjects(color);
+
+    timers.push(setTimeout(function () {
+      clearObjects();
+      showColorTile(pickNext());
+    }, NEXT_DELAY_MS));
+  }
+
+  tile.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    reveal();
+  });
+
+  document.getElementById("startBtn").addEventListener("click", function () {
+    ensureAudio();
+    startScreen.style.display = "none";
+    showColorTile(pickNext());
+  });
+
+  muteBtn.addEventListener("click", function () {
+    muted = !muted;
+    muteBtn.textContent = muted ? "🔇" : "🔊";
+  });
+
+  window.addEventListener("resize", function () {
+    if (currentIdx >= 0) placeTile(false);
+  });
+
+  document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+})();
+</script>
+</body>
+</html>
