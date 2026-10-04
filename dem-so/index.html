@@ -9,7 +9,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%;
-    overflow: hidden; touch-action: manipulation; user-select: none;
+    overflow: hidden; touch-action: none; user-select: none;
     font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
   }
   body { background: linear-gradient(135deg, #eef9ff, #fff7e6, #f2ffef); }
@@ -30,31 +30,52 @@
   }
   #startBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #1b8a7e; }
 
-  #app { position: fixed; inset: 0; display: flex; flex-direction: column; padding: 12px; gap: 12px; }
-  #topRow { display: flex; align-items: center; gap: 10px; }
-  #numRow {
-    flex: 1; display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px;
-  }
-  .numBtn {
-    aspect-ratio: 1 / 1.1; border: none; border-radius: 18px; cursor: pointer;
-    font-size: clamp(20px, 5vmin, 44px); font-weight: 900; color: #fff; line-height: 1;
-    box-shadow: 0 6px 0 rgba(0,0,0,.18); padding: 0; min-width: 0;
-  }
-  .numBtn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.18); }
-  .numBtn.active { outline: 4px solid #fff; outline-offset: -4px; }
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+
   #muteBtn {
-    width: 52px; height: 52px; border-radius: 50%; border: none; flex: none;
-    background: #ffffffdd; font-size: 24px; cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,.15);
+    position: fixed; top: 14px; right: 14px; z-index: 60;
+    width: 52px; height: 52px; border-radius: 50%; border: none;
+    background: #ffffffdd; font-size: 24px; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,.15);
   }
 
   #caption {
-    text-align: center; font-size: clamp(24px, 6vw, 50px); font-weight: 900; color: #1f6f8b;
-    text-shadow: 0 3px 0 #fff; min-height: 1.3em;
+    position: fixed; left: 0; right: 0; top: 12px; text-align: center; padding: 0 70px;
+    font-size: clamp(22px, 5vw, 44px); font-weight: 900; color: #1f6f8b;
+    text-shadow: 0 3px 0 #fff; pointer-events: none; min-height: 1.3em; z-index: 5;
+  }
+
+  #tile {
+    position: absolute; left: 0; top: 0;
+    width: var(--tile); height: var(--tile);
+    transition: left .6s cubic-bezier(.3,1.4,.5,1), top .6s cubic-bezier(.3,1.4,.5,1);
+    cursor: pointer; z-index: 3; touch-action: manipulation;
+  }
+  #tileFace {
+    width: 100%; height: 100%; border-radius: 36%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--tile) * 0.62); font-weight: 900; color: #fff; line-height: 1;
+    box-shadow: 0 10px 0 rgba(0,0,0,.18), 0 16px 26px rgba(0,0,0,.18);
+    text-shadow: 0 4px 0 rgba(0,0,0,.15);
+    animation: hop 0.9s ease-in-out infinite;
+  }
+  @keyframes hop {
+    0%, 100% { transform: translateY(0) scale(1.06, 0.92); }
+    20%      { transform: translateY(0) scale(1, 1); }
+    50%      { transform: translateY(-14%) scale(0.96, 1.05); }
+    80%      { transform: translateY(0) scale(1, 1); }
+  }
+  #tile.pick #tileFace { animation: spin .8s ease; }
+  @keyframes spin {
+    0%   { transform: rotate(0) scale(1); }
+    50%  { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
   }
 
   #field {
-    flex: 1; position: relative; display: flex; flex-wrap: wrap;
-    align-content: center; justify-content: center; gap: 8px; min-height: 0;
+    position: absolute; left: 0; right: 0; bottom: 6%;
+    display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-end;
+    gap: 8px; padding: 0 12px; pointer-events: none; z-index: 2;
   }
   #field img {
     width: var(--it); height: var(--it); opacity: 0; transform: scale(0.3);
@@ -71,14 +92,12 @@
   <button id="startBtn">Bắt đầu chơi ▶</button>
 </div>
 
-<div id="app">
-  <div id="topRow">
-    <div id="numRow"></div>
-    <button id="muteBtn" aria-label="Tắt/bật âm thanh">🔊</button>
-  </div>
-  <div id="caption"></div>
+<button id="muteBtn" aria-label="Tắt/bật âm thanh">🔊</button>
+<div id="stage">
   <div id="field"></div>
+  <div id="tile"><div id="tileFace"></div></div>
 </div>
+<div id="caption"></div>
 
 <script>
 (function () {
@@ -93,18 +112,23 @@
     { cp: "1f34e", name: "quả táo", clip: "audio/obj-qua-tao.mp3" },
     { cp: "1f41f", name: "con cá", clip: "audio/obj-con-ca.mp3" }
   ];
-  var COLORS = ["#ff6b6b", "#ff9f43", "#feca57", "#1dd1a1", "#48dbfb", "#54a0ff", "#9b59ff", "#ff6fb5", "#00b8c4"];
+  var COLORS = ["#ff6b6b", "#ff9f43", "#f0b400", "#1dd1a1", "#2e9bff", "#7a5cff", "#ff6fb5", "#00b8c4", "#8bc34a"];
   var STEP_GAP_MS = 350;
+  var NEXT_NUMBER_DELAY_MS = 1500;
 
   var muted = false;
   var audioCtx = null;
   var clipCache = {};
   var runId = 0;
   var busy = false;
+  var nextNum = 1;
+  var nextTimer = null;
 
-  var numRow = document.getElementById("numRow");
-  var caption = document.getElementById("caption");
+  var stage = document.getElementById("stage");
+  var tile = document.getElementById("tile");
+  var tileFace = document.getElementById("tileFace");
   var field = document.getElementById("field");
+  var caption = document.getElementById("caption");
   var muteBtn = document.getElementById("muteBtn");
   var startScreen = document.getElementById("startScreen");
 
@@ -147,12 +171,11 @@
       if (i >= srcs.length || muted) { if (done) done(); return; }
       var clip = getClip(srcs[i++]);
       clip.currentTime = 0;
-      clip.onended = null;
-      clip.onerror = function () { next(); };
       clip.onended = next;
+      clip.onerror = next;
       try {
         var p = clip.play();
-        if (p && p.catch) p.catch(function () { next(); });
+        if (p && p.catch) p.catch(next);
       } catch (e) { next(); }
     }
     next();
@@ -162,24 +185,42 @@
     setTimeout(function () { if (token === runId) fn(); }, ms);
   }
 
-  function setCaption(text) { caption.textContent = text; }
+  function tileSize() {
+    return Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.38);
+  }
 
-  function clearField() { field.innerHTML = ""; }
+  function placeTile(animate) {
+    var size = tileSize();
+    stage.style.setProperty("--tile", size + "px");
+    var maxX = Math.max(16, window.innerWidth - size - 16);
+    var minY = window.innerHeight * 0.14;
+    var maxY = Math.max(minY, window.innerHeight * 0.5 - size);
+    var x = 16 + Math.random() * (maxX - 16);
+    var y = minY + Math.random() * (maxY - minY);
+    tile.style.transition = animate ? "" : "none";
+    tile.style.left = x + "px";
+    tile.style.top = y + "px";
+    if (!animate) { void tile.offsetWidth; tile.style.transition = ""; }
+  }
 
-  function setActive(n) {
-    Array.prototype.forEach.call(numRow.children, function (b, i) {
-      b.classList.toggle("active", i + 1 === n);
-    });
+  function showNumberTile(n) {
+    tileFace.textContent = String(n);
+    tileFace.style.background = COLORS[n - 1];
+    tile.classList.remove("pick");
+    placeTile(true);
+    busy = false;
   }
 
   function sizeItems(n) {
     var cols = n <= 3 ? n : n <= 6 ? 3 : 5;
-    var w = field.clientWidth || window.innerWidth;
-    var h = field.clientHeight || window.innerHeight * 0.6;
+    var w = window.innerWidth;
+    var h = window.innerHeight * 0.4;
     var rows = Math.ceil(n / cols);
-    var sz = Math.min((w - 16) / cols - 8, (h - 16) / rows - 8, 200);
+    var sz = Math.min((w - 24) / cols - 8, (h - 16) / rows - 8, 180);
     return Math.max(60, Math.floor(sz));
   }
+
+  function clearField() { field.innerHTML = ""; }
 
   function playCount(n) {
     ensureAudio();
@@ -187,33 +228,35 @@
     var token = runId;
     busy = true;
     clearField();
-    setActive(n);
-    setCaption("");
+    caption.textContent = "";
+    tile.classList.remove("pick");
+    void tile.offsetWidth;
+    tile.classList.add("pick");
 
     var item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
-    var sz = sizeItems(n);
-    field.style.setProperty("--it", sz + "px");
+    field.style.setProperty("--it", sizeItems(n) + "px");
 
     var steps = [];
-    // "Số ba"
     steps.push({ audio: ["audio/so.mp3", "audio/num-" + n + ".mp3"], caption: "Số " + NUM_WORDS[n - 1] });
-
     for (var k = 1; k <= n; k++) {
-      steps.push({
-        show: true,
-        audio: ["audio/num-" + k + ".mp3", item.clip],
-        caption: k + " " + item.name
-      });
+      steps.push({ show: true, audio: ["audio/num-" + k + ".mp3", item.clip], caption: k + " " + item.name });
     }
-    // "Có ba bông hoa"
-    steps.push({ audio: ["audio/co.mp3", "audio/num-" + n + ".mp3", item.clip], caption: "Có " + n + " " + item.name, final: true });
+    steps.push({ audio: ["audio/co.mp3", "audio/num-" + n + ".mp3", item.clip], caption: "Có " + n + " " + item.name });
 
     var shown = 0;
     function run(idx) {
       if (token !== runId) return;
-      if (idx >= steps.length) { busy = false; return; }
+      if (idx >= steps.length) {
+        busy = false;
+        nextTimer = setTimeout(function () {
+          if (token !== runId) return;
+          nextNum = nextNum >= 9 ? 1 : nextNum + 1;
+          showNumberTile(nextNum);
+        }, NEXT_NUMBER_DELAY_MS);
+        return;
+      }
       var s = steps[idx];
-      setCaption(s.caption);
+      caption.textContent = s.caption;
       if (s.show) {
         shown++;
         var img = document.createElement("img");
@@ -231,29 +274,26 @@
     run(0);
   }
 
-  for (var n = 1; n <= 9; n++) {
-    var b = document.createElement("button");
-    b.className = "numBtn";
-    b.textContent = String(n);
-    b.style.background = COLORS[n - 1];
-    b.setAttribute("aria-label", "Số " + n);
-    (function (n) {
-      b.addEventListener("pointerdown", function (e) {
-        e.preventDefault();
-        playCount(n);
-      });
-    })(n);
-    numRow.appendChild(b);
-  }
+  tile.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    if (busy) return;
+    playCount(parseInt(tileFace.textContent, 10));
+  });
 
   document.getElementById("startBtn").addEventListener("click", function () {
     ensureAudio();
     startScreen.style.display = "none";
+    nextNum = 1;
+    showNumberTile(nextNum);
   });
 
   muteBtn.addEventListener("click", function () {
     muted = !muted;
     muteBtn.textContent = muted ? "🔇" : "🔊";
+  });
+
+  window.addEventListener("resize", function () {
+    if (startScreen.style.display === "none") placeTile(false);
   });
 
   document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
