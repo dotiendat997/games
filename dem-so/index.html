@@ -9,7 +9,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%;
-    overflow: hidden; touch-action: none; user-select: none;
+    overflow: hidden; touch-action: manipulation; user-select: none;
     font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
   }
   body { background: linear-gradient(135deg, #eef9ff, #fff7e6, #f2ffef); }
@@ -46,9 +46,8 @@
   }
 
   #tile {
-    position: absolute; left: 0; top: 0;
+    position: absolute; left: 50%; top: 16%; transform: translateX(-50%);
     width: var(--tile); height: var(--tile);
-    transition: left .6s cubic-bezier(.3,1.4,.5,1), top .6s cubic-bezier(.3,1.4,.5,1);
     cursor: pointer; z-index: 3; touch-action: manipulation;
   }
   #tileFace {
@@ -73,8 +72,8 @@
   }
 
   #field {
-    position: absolute; left: 0; right: 0; bottom: 6%;
-    display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-end;
+    position: absolute; left: 0; right: 0; top: 52%; bottom: 13%;
+    display: flex; flex-wrap: wrap; justify-content: center; align-content: center;
     gap: 8px; padding: 0 12px; pointer-events: none; z-index: 2;
   }
   #field img {
@@ -82,6 +81,23 @@
     transition: opacity .25s ease, transform .4s cubic-bezier(.2,1.6,.4,1);
   }
   #field img.in { opacity: 1; transform: scale(1); }
+
+  #nav {
+    position: fixed; left: 0; right: 0; bottom: 14px; z-index: 6;
+    display: flex; align-items: center; justify-content: center; gap: 18px;
+  }
+  .navBtn {
+    width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
+    background: #ffffffee; font-size: 28px; font-weight: 900; color: #1f6f8b;
+    box-shadow: 0 5px 0 rgba(0,0,0,.15);
+  }
+  .navBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.15); }
+  .navBtn:disabled { opacity: .35; }
+  #dots { display: flex; gap: 8px; }
+  .dot {
+    width: 14px; height: 14px; border-radius: 50%; background: #c9dde6; border: none; padding: 0; cursor: pointer;
+  }
+  .dot.on { transform: scale(1.35); background: #1f6f8b; }
 </style>
 </head>
 <body>
@@ -98,6 +114,11 @@
   <div id="tile"><div id="tileFace"></div></div>
 </div>
 <div id="caption"></div>
+<div id="nav">
+  <button class="navBtn" id="prevBtn" aria-label="Số trước">◀</button>
+  <div id="dots"></div>
+  <button class="navBtn" id="nextBtn" aria-label="Số sau">▶</button>
+</div>
 
 <script>
 (function () {
@@ -113,16 +134,16 @@
     { cp: "1f41f", name: "con cá", clip: "audio/obj-con-ca.mp3" }
   ];
   var COLORS = ["#ff6b6b", "#ff9f43", "#f0b400", "#1dd1a1", "#2e9bff", "#7a5cff", "#ff6fb5", "#00b8c4", "#8bc34a"];
-  var STEP_GAP_MS = 350;
-  var NEXT_NUMBER_DELAY_MS = 1500;
+  var PLAYBACK_RATE = 1.15;
+  var STEP_GAP_MS = 260;
 
   var muted = false;
   var audioCtx = null;
   var clipCache = {};
   var runId = 0;
   var busy = false;
-  var nextNum = 1;
-  var nextTimer = null;
+  var page = 1;
+  var lastItem = -1;
 
   var stage = document.getElementById("stage");
   var tile = document.getElementById("tile");
@@ -131,6 +152,9 @@
   var caption = document.getElementById("caption");
   var muteBtn = document.getElementById("muteBtn");
   var startScreen = document.getElementById("startScreen");
+  var prevBtn = document.getElementById("prevBtn");
+  var nextBtn = document.getElementById("nextBtn");
+  var dotsEl = document.getElementById("dots");
 
   function ensureAudio() {
     if (!audioCtx) {
@@ -171,6 +195,7 @@
       if (i >= srcs.length || muted) { if (done) done(); return; }
       var clip = getClip(srcs[i++]);
       clip.currentTime = 0;
+      clip.playbackRate = PLAYBACK_RATE;
       clip.onended = next;
       clip.onerror = next;
       try {
@@ -186,54 +211,60 @@
   }
 
   function tileSize() {
-    return Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.38);
-  }
-
-  function placeTile(animate) {
-    var size = tileSize();
-    stage.style.setProperty("--tile", size + "px");
-    var maxX = Math.max(16, window.innerWidth - size - 16);
-    var minY = window.innerHeight * 0.14;
-    var maxY = Math.max(minY, window.innerHeight * 0.5 - size);
-    var x = 16 + Math.random() * (maxX - 16);
-    var y = minY + Math.random() * (maxY - minY);
-    tile.style.transition = animate ? "" : "none";
-    tile.style.left = x + "px";
-    tile.style.top = y + "px";
-    if (!animate) { void tile.offsetWidth; tile.style.transition = ""; }
-  }
-
-  function showNumberTile(n) {
-    tileFace.textContent = String(n);
-    tileFace.style.background = COLORS[n - 1];
-    tile.classList.remove("pick");
-    placeTile(true);
-    busy = false;
+    return Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.3);
   }
 
   function sizeItems(n) {
     var cols = n <= 3 ? n : n <= 6 ? 3 : 5;
     var w = window.innerWidth;
-    var h = window.innerHeight * 0.4;
+    var h = window.innerHeight * 0.35;
     var rows = Math.ceil(n / cols);
     var sz = Math.min((w - 24) / cols - 8, (h - 16) / rows - 8, 180);
     return Math.max(60, Math.floor(sz));
   }
 
-  function clearField() { field.innerHTML = ""; }
+  function pickItem() {
+    var i;
+    do { i = Math.floor(Math.random() * ITEMS.length); } while (i === lastItem && ITEMS.length > 1);
+    lastItem = i;
+    return ITEMS[i];
+  }
+
+  function renderPage() {
+    runId++;
+    busy = false;
+    field.innerHTML = "";
+    caption.textContent = "";
+    stage.style.setProperty("--tile", tileSize() + "px");
+    tileFace.textContent = String(page);
+    tileFace.style.background = COLORS[page - 1];
+    tile.classList.remove("pick");
+
+    prevBtn.disabled = page === 1;
+    nextBtn.disabled = page === 9;
+    Array.prototype.forEach.call(dotsEl.children, function (d, i) {
+      d.classList.toggle("on", i + 1 === page);
+    });
+  }
+
+  function goPage(p) {
+    if (p < 1 || p > 9) return;
+    page = p;
+    renderPage();
+  }
 
   function playCount(n) {
     ensureAudio();
     runId++;
     var token = runId;
     busy = true;
-    clearField();
+    field.innerHTML = "";
     caption.textContent = "";
     tile.classList.remove("pick");
     void tile.offsetWidth;
     tile.classList.add("pick");
 
-    var item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+    var item = pickItem();
     field.style.setProperty("--it", sizeItems(n) + "px");
 
     var steps = [];
@@ -246,15 +277,7 @@
     var shown = 0;
     function run(idx) {
       if (token !== runId) return;
-      if (idx >= steps.length) {
-        busy = false;
-        nextTimer = setTimeout(function () {
-          if (token !== runId) return;
-          nextNum = nextNum >= 9 ? 1 : nextNum + 1;
-          showNumberTile(nextNum);
-        }, NEXT_NUMBER_DELAY_MS);
-        return;
-      }
+      if (idx >= steps.length) { busy = false; return; }
       var s = steps[idx];
       caption.textContent = s.caption;
       if (s.show) {
@@ -277,14 +300,26 @@
   tile.addEventListener("pointerdown", function (e) {
     e.preventDefault();
     if (busy) return;
-    playCount(parseInt(tileFace.textContent, 10));
+    playCount(page);
   });
+
+  for (var d = 1; d <= 9; d++) {
+    var dot = document.createElement("button");
+    dot.className = "dot";
+    dot.setAttribute("aria-label", "Trang số " + d);
+    (function (d) {
+      dot.addEventListener("click", function () { goPage(d); });
+    })(d);
+    dotsEl.appendChild(dot);
+  }
+
+  prevBtn.addEventListener("click", function () { goPage(page - 1); });
+  nextBtn.addEventListener("click", function () { goPage(page + 1); });
 
   document.getElementById("startBtn").addEventListener("click", function () {
     ensureAudio();
     startScreen.style.display = "none";
-    nextNum = 1;
-    showNumberTile(nextNum);
+    renderPage();
   });
 
   muteBtn.addEventListener("click", function () {
@@ -293,7 +328,7 @@
   });
 
   window.addEventListener("resize", function () {
-    if (startScreen.style.display === "none") placeTile(false);
+    if (startScreen.style.display === "none") stage.style.setProperty("--tile", tileSize() + "px");
   });
 
   document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
