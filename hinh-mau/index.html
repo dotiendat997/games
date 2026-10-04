@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Hình Và Màu - Bé Vui Chơi</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; touch-action: none; user-select: none;
+    font-family: "Segoe UI", "Noto Sans", Arial, sans-serif;
+  }
+  body {
+    background: linear-gradient(135deg, #fff0f6, #eaf6ff, #fffbe6, #eafff1);
+    background-size: 400% 400%;
+    animation: bgShift 18s ease infinite;
+  }
+  @keyframes bgShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+
+  #title {
+    position: fixed; top: 14px; left: 0; right: 0; padding: 0 70px;
+    text-align: center; font-size: clamp(20px, 4.6vw, 38px);
+    font-weight: 800; color: #6a3fb0; text-shadow: 0 2px 0 #fff;
+    pointer-events: none; z-index: 5;
+  }
+
+  #startScreen {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 24px;
+    background: radial-gradient(circle at 50% 30%, #ffffff, #fff0f6);
+    z-index: 50;
+  }
+  #startScreen h1 { font-size: clamp(28px, 8vw, 56px); color: #6a3fb0; margin: 0; text-align: center; text-shadow: 0 3px 0 #fff; }
+  #startEmoji { font-size: clamp(60px, 18vw, 130px); animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-4deg);} 50% { transform: translateY(-16px) rotate(4deg);} }
+  #startBtn {
+    font-size: clamp(20px, 5vw, 34px); font-weight: 800; color: #fff;
+    background: linear-gradient(135deg,#ff6fb5,#7a5cff);
+    border: none; border-radius: 999px; padding: 18px 48px;
+    box-shadow: 0 8px 0 #4f3ab0, 0 14px 24px rgba(0,0,0,.2); cursor: pointer;
+  }
+  #startBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #4f3ab0; }
+
+  #muteBtn {
+    position: fixed; top: 14px; right: 14px; z-index: 60;
+    width: 52px; height: 52px; border-radius: 50%; border: none;
+    background: #ffffffdd; font-size: 24px; cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,.15);
+  }
+
+  .shape {
+    position: absolute; left: 0; top: 0; line-height: 0;
+    cursor: pointer; filter: drop-shadow(0 6px 6px rgba(0,0,0,.15));
+    will-change: transform; z-index: 3;
+  }
+  .shape svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .shape.pop { animation: popAway .35s ease forwards; pointer-events: none; }
+  @keyframes popAway {
+    0%   { transform: scale(1); opacity: 1; }
+    60%  { transform: scale(1.4); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  .particle {
+    position: absolute; font-size: 34px; pointer-events: none;
+    z-index: 6; will-change: transform, opacity;
+  }
+
+  #caption {
+    position: fixed; left: 0; right: 0; bottom: 6%; text-align: center; padding: 0 16px;
+    pointer-events: none; z-index: 40;
+    font-size: clamp(26px, 6.5vw, 60px); font-weight: 900;
+    color: #6a3fb0; text-shadow: 0 3px 0 #fff, 0 6px 14px rgba(0,0,0,.15);
+    opacity: 0;
+  }
+  #caption.show { animation: captionPop 2.6s ease forwards; }
+  @keyframes captionPop {
+    0%   { opacity: 0; transform: translateY(10px) scale(0.9); }
+    12%  { opacity: 1; transform: translateY(0) scale(1.05); }
+    20%  { transform: translateY(0) scale(1); }
+    85%  { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-10px) scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+  <div id="startEmoji">🔷</div>
+  <h1>Hình Và Màu<br>Bé Vui Chơi</h1>
+  <button id="startBtn">Bắt đầu chơi ▶</button>
+</div>
+
+<div id="title">✨ Chạm vào hình để nghe tên ✨</div>
+<button id="muteBtn" aria-label="Tắt/bật âm thanh">🔊</button>
+<div id="stage"></div>
+<div id="caption"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var SHAPES = [
+    { name: 0, path: "circle" }, { name: 1, path: "square" }, { name: 2, path: "triangle" },
+    { name: 3, path: "rect" }, { name: 4, path: "star" }, { name: 5, path: "heart" }, { name: 6, path: "diamond" }
+  ];
+  var COLORS = [
+    { hex: "#ff4d4d", name: 0 }, { hex: "#ff9a3c", name: 1 }, { hex: "#ffd21f", name: 2 },
+    { hex: "#35c759", name: 3 }, { hex: "#3b8cff", name: 4 }, { hex: "#9b59ff", name: 5 }, { hex: "#ff7eb9", name: 6 }
+  ];
+  var SHAPE_NAMES = ["Hình tròn", "Hình vuông", "Hình tam giác", "Hình chữ nhật", "Ngôi sao", "Trái tim", "Hình thoi"];
+  var COLOR_NAMES = ["Đỏ", "Cam", "Vàng", "Xanh lá", "Xanh dương", "Tím", "Hồng"];
+  var MAX_ITEMS = 4;
+  var SPEECH_RATE = 0.8;
+
+  var STAR_POINTS = (function () {
+    var pts = [];
+    for (var i = 0; i < 10; i++) {
+      var r = i % 2 === 0 ? 46 : 20;
+      var a = -Math.PI / 2 + i * Math.PI / 5;
+      pts.push((50 + r * Math.cos(a)).toFixed(1) + "," + (52 + r * Math.sin(a)).toFixed(1));
+    }
+    return pts.join(" ");
+  })();
+
+  var SHAPE_SVG = {
+    circle: '<circle cx="50" cy="50" r="44"/>',
+    square: '<rect x="8" y="8" width="84" height="84" rx="8"/>',
+    triangle: '<polygon points="50,6 96,92 4,92" stroke-linejoin="round"/>',
+    rect: '<rect x="4" y="24" width="92" height="52" rx="8"/>',
+    star: '<polygon points="' + STAR_POINTS + '" stroke-linejoin="round"/>',
+    heart: '<path d="M50 90 C 12 62, 2 34, 22 18 C 36 7, 48 18, 50 28 C 52 18, 64 7, 78 18 C 98 34, 88 62, 50 90 Z"/>',
+    diamond: '<polygon points="50,4 96,50 50,96 4,50" stroke-linejoin="round"/>'
+  };
+
+  var stage = document.getElementById("stage");
+  var startScreen = document.getElementById("startScreen");
+  var startBtn = document.getElementById("startBtn");
+  var muteBtn = document.getElementById("muteBtn");
+  var caption = document.getElementById("caption");
+  var captionTimer = null;
+  var muted = false;
+  var floaters = [];
+  var audioCtx = null;
+  var clipCache = {};
+  var running = false;
+
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+
+  function playChime() {
+    if (muted || !audioCtx) return;
+    var notes = [523.25, 659.25, 783.99];
+    notes.forEach(function (freq, i) {
+      var t0 = audioCtx.currentTime + i * 0.09;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.3);
+    });
+  }
+
+  function getClip(src) {
+    if (!clipCache[src]) {
+      clipCache[src] = new Audio(src);
+      clipCache[src].preload = "auto";
+    }
+    return clipCache[src];
+  }
+
+  // Plays clips one after another, slowly.
+  var speechToken = 0;
+  function playSeq(srcs) {
+    var token = ++speechToken;
+    var i = 0;
+    function next() {
+      if (token !== speechToken) return;
+      if (i >= srcs.length || muted) return;
+      var clip = getClip(srcs[i++]);
+      clip.currentTime = 0;
+      clip.playbackRate = SPEECH_RATE;
+      clip.onended = next;
+      clip.onerror = next;
+      try {
+        var p = clip.play();
+        if (p && p.catch) p.catch(next);
+      } catch (e) { next(); }
+    }
+    next();
+  }
+
+  function showCaption(text) {
+    caption.textContent = text;
+    caption.classList.remove("show");
+    void caption.offsetWidth;
+    caption.classList.add("show");
+  }
+
+  function makeShapeEl(shape, color, size) {
+    var el = document.createElement("div");
+    el.className = "shape";
+    el.style.width = size + "px";
+    el.style.height = size + "px";
+    el.innerHTML =
+      '<svg viewBox="0 0 100 100"><g fill="' + color.hex + '" stroke="#ffffff" stroke-width="4">' +
+      SHAPE_SVG[shape.path] + '</g></svg>';
+    return el;
+  }
+
+  function spawnFloater() {
+    var shape = pick(SHAPES);
+    var color = pick(COLORS);
+    var size = rand(110, 190);
+    var el = makeShapeEl(shape, color, size);
+
+    var w = window.innerWidth, h = window.innerHeight;
+    var x = rand(0, w - size);
+    var y = rand(h * 0.18, h - size - 20);
+    var vx = rand(-0.6, 0.6) || 0.4;
+    var vy = rand(-0.6, 0.6) || 0.4;
+    if (Math.abs(vx) < 0.15) vx = 0.3 * (Math.random() < 0.5 ? -1 : 1);
+    if (Math.abs(vy) < 0.15) vy = 0.3 * (Math.random() < 0.5 ? -1 : 1);
+
+    var f = { el: el, shape: shape, color: color, x: x, y: y, vx: vx, vy: vy, size: size, angle: rand(0, 360), spin: rand(-0.3, 0.3) };
+
+    el.addEventListener("pointerdown", function (ev) {
+      ev.preventDefault();
+      onPop(f);
+    }, { passive: false });
+
+    stage.appendChild(el);
+    floaters.push(f);
+  }
+
+  function onPop(f) {
+    if (f.popped) return;
+    f.popped = true;
+    ensureAudio();
+    playChime();
+    var text = SHAPE_NAMES[f.shape.name] + " màu " + COLOR_NAMES[f.color.name].toLowerCase();
+    showCaption(text);
+    playSeq([
+      "audio/shape-" + f.shape.name + ".mp3",
+      "audio/mau.mp3",
+      "audio/color-" + f.color.name + ".mp3"
+    ]);
+    burstParticles(f.x + f.size / 2, f.y + f.size / 2);
+    f.el.classList.add("pop");
+    setTimeout(function () {
+      if (f.el.parentNode) f.el.parentNode.removeChild(f.el);
+      floaters = floaters.filter(function (o) { return o !== f; });
+      spawnFloater();
+    }, 350);
+  }
+
+  var CELEBRATE = ["✨", "🎉", "⭐", "💖"];
+  function burstParticles(cx, cy) {
+    var count = 10;
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement("div");
+      p.className = "particle";
+      p.textContent = CELEBRATE[Math.floor(Math.random() * CELEBRATE.length)];
+      p.style.left = cx + "px";
+      p.style.top = cy + "px";
+      var angle = (Math.PI * 2 * i) / count + rand(-0.3, 0.3);
+      var dist = rand(80, 160);
+      var dx = Math.cos(angle) * dist;
+      var dy = Math.sin(angle) * dist;
+      stage.appendChild(p);
+      var start = performance.now();
+      var dur = 600;
+      (function animate(p, dx, dy, start, dur) {
+        function step(now) {
+          var t = Math.min(1, (now - start) / dur);
+          var ease = 1 - Math.pow(1 - t, 2);
+          p.style.transform = "translate(" + dx * ease + "px," + (dy * ease + t * t * 40) + "px) scale(" + (1 - t * 0.6) + ")";
+          p.style.opacity = String(1 - t);
+          if (t < 1) requestAnimationFrame(step);
+          else if (p.parentNode) p.parentNode.removeChild(p);
+        }
+        requestAnimationFrame(step);
+      })(p, dx, dy, start, dur);
+    }
+  }
+
+  function tick() {
+    if (!running) return;
+    var w = window.innerWidth, h = window.innerHeight;
+    for (var i = 0; i < floaters.length; i++) {
+      var f = floaters[i];
+      if (f.popped) continue;
+      f.x += f.vx;
+      f.y += f.vy;
+      f.angle += f.spin;
+      if (f.x <= 0 || f.x >= w - f.size) { f.vx *= -1; f.x = Math.max(0, Math.min(f.x, w - f.size)); }
+      if (f.y <= h * 0.12 || f.y >= h - f.size - 10) { f.vy *= -1; f.y = Math.max(h * 0.12, Math.min(f.y, h - f.size - 10)); }
+      f.el.style.transform = "translate(" + f.x + "px," + f.y + "px) rotate(" + f.angle + "deg)";
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function startGame() {
+    ensureAudio();
+    startScreen.style.display = "none";
+    running = true;
+    for (var i = 0; i < MAX_ITEMS; i++) spawnFloater();
+    requestAnimationFrame(tick);
+  }
+
+  startBtn.addEventListener("click", startGame);
+  startBtn.addEventListener("touchend", function (e) { e.preventDefault(); startGame(); }, { passive: false });
+
+  muteBtn.addEventListener("click", function () {
+    muted = !muted;
+    muteBtn.textContent = muted ? "🔇" : "🔊";
+    if (muted) speechToken++;
+  });
+
+  document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+})();
+</script>
+</body>
+</html>

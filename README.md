@@ -18,6 +18,8 @@ từ một repo duy nhất.
   số lượng đồ vật hiện ra.
 - [`mau-sac/`](mau-sac/) — Màu Sắc: chạm ô màu, nghe tên màu và thấy các
   đồ vật cùng màu xuất hiện.
+- [`hinh-mau/`](hinh-mau/) — Hình Và Màu: chạm hình học màu sắc, nghe đọc
+  chậm tên hình và màu.
 - [`dem-so/`](dem-so/) — Đếm Số: chạm số 1-9, game đếm từng đồ vật một
   và đọc số đếm kèm tên đồ vật.
 
